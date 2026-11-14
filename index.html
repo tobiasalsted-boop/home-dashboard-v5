@@ -12,13 +12,13 @@
 :root {
   --bg: #1c2633; --panel: #243143; --line: #33445a;
   --text: #e9eef4; --muted: #8fa0b3; --lit: #f4c46a;
-  --bar: #3a4d66; --cheap: #7cc4b0; --err: #ff8a7a;
+  --fixed: #3a4d66; --cheap: #7cc4b0; --mid: #9fb3cc; --dear: #ec8a6e; --band: rgba(244,196,106,.08); --chip: #33445a; --err: #ff8a7a;
 }
 @media (prefers-color-scheme: light) {
   :root {
     --bg: #e4eaf0; --panel: #ffffff; --line: #dde3ea;
     --text: #1c2633; --muted: #5d6b7b; --lit: #d9962a;
-    --bar: #c9d4e0; --cheap: #2f8f78; --err: #b3261e;
+    --fixed: #cdd7e2; --cheap: #2f9a80; --mid: #7f95b0; --dear: #d4583b; --band: rgba(217,150,42,.10); --chip: #e4eaf0; --err: #b3261e;
   }
 }
 * { box-sizing: border-box; }
@@ -60,18 +60,46 @@ header { grid-column: 1 / -1; display: flex; justify-content: space-between; ali
 .connect { margin-top: 8px; font: inherit; font-size: 16px; padding: 10px 16px; border-radius: 12px; border: 0; background: var(--lit); color: #3a2600; }
 
 /* Elpris */
-.stats { display: flex; gap: 32px; margin-bottom: 14px; }
-.stat .v { font-size: 34px; font-weight: 300; font-variant-numeric: tabular-nums; line-height: 1.1; }
-.stat .v span { font-size: 16px; color: var(--muted); margin-left: 4px; }
+.pricehead { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; margin-bottom: 8px; }
+.stats { display: flex; gap: 28px; }
+.stat .v { font-size: 32px; font-weight: 300; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.stat .v span { font-size: 15px; color: var(--muted); margin-left: 4px; }
 .stat .l { font-size: 14px; color: var(--muted); }
-.bars { flex: 1; min-height: 110px; display: flex; align-items: flex-end; gap: 3px; }
-.bar { flex: 1; background: var(--bar); border-radius: 4px 4px 2px 2px; min-height: 4px; }
-.bar.cheap { background: var(--cheap); }
-.bar.past { opacity: .35; }
-.bar.now { background: var(--lit); opacity: 1; }
-.axis { display: flex; justify-content: space-between; color: var(--muted); font-size: 12px; margin-top: 6px; font-variant-numeric: tabular-nums; }
-.note { font-size: 14px; color: var(--muted); margin-top: 10px; }
+.stat.current .v { color: var(--lit); }
+.seg { display: flex; background: var(--chip); border-radius: 12px; padding: 3px; flex-shrink: 0; }
+.seg:empty { display: none; }
+.seg button { font: inherit; font-size: 15px; border: 0; background: transparent; color: var(--muted); padding: 7px 14px; border-radius: 9px; }
+.seg button.on { background: var(--panel); color: var(--text); font-weight: 600; }
+#chart { flex: 1; min-height: 160px; position: relative; }
+#chart svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; overflow: visible; }
+#chart .grid { stroke: var(--line); stroke-width: 1; stroke-dasharray: 2 4; }
+#chart .zero { stroke: var(--muted); stroke-width: 1; opacity: .6; }
+#chart .ylab, #chart .xlab { fill: var(--muted); font-size: 12px; font-family: inherit; font-variant-numeric: tabular-nums; }
+#chart .xlab { text-anchor: middle; }
+#chart .band { fill: var(--band); }
+#chart .fixed { fill: var(--fixed); }
+#chart .lvl-cheap { fill: var(--cheap); }
+#chart .lvl-mid { fill: var(--mid); }
+#chart .lvl-dear { fill: var(--dear); }
+#chart .hr.past { opacity: .35; }
+#chart .nowbox { fill: none; stroke: var(--lit); stroke-width: 2; }
+#chart .nowlab, #chart .sellab { font-size: 13px; font-weight: 600; text-anchor: middle; font-family: inherit; }
+#chart .nowlab { fill: var(--lit); }
+#chart .sellab { fill: var(--text); }
+#chart .selbox { fill: none; stroke: var(--text); stroke-width: 1.5; stroke-dasharray: 3 3; }
+#chart .win { stroke: var(--cheap); stroke-width: 4; stroke-linecap: round; }
+#chart .hit { fill: transparent; cursor: pointer; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--muted); margin-top: 8px; }
+.legend .sw { display: inline-block; width: 11px; height: 11px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+.legend .sw.lvl-cheap { background: var(--cheap); }
+.legend .sw.lvl-mid { background: var(--mid); }
+.legend .sw.lvl-dear { background: var(--dear); }
+.legend .sw.fixed { background: var(--fixed); }
+.legend .sw.band { background: var(--band); outline: 1px solid var(--line); }
+.legend .sw.win { height: 4px; width: 16px; border-radius: 2px; background: var(--cheap); vertical-align: 2px; }
+.note { font-size: 14px; color: var(--muted); margin-top: 8px; min-height: 20px; }
 .note b { color: var(--cheap); font-weight: 600; }
+.note b.sel { color: var(--text); }
 
 /* Uge */
 .weekgrid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; }
@@ -87,7 +115,7 @@ header { grid-column: 1 / -1; display: flex; justify-content: space-between; ali
   #price { grid-column: 1; grid-row: 2; }
   #week { grid-column: 1; grid-row: 3; }
   #cal { grid-column: 1; grid-row: 4; }
-  .bars { min-height: 140px; }
+  #chart { min-height: 200px; }
 }
 
 /* Opsætning */
@@ -120,10 +148,13 @@ header { grid-column: 1 / -1; display: flex; justify-content: space-between; ali
   </section>
 
   <section class="panel" id="price">
-    <h2><span id="priceTitle">Elpris i dag</span> <small id="priceStatus"></small></h2>
-    <div class="stats" id="priceStats"></div>
-    <div class="bars" id="bars"></div>
-    <div class="axis"><span>00</span><span>06</span><span>12</span><span>18</span><span>24</span></div>
+    <h2><span id="priceTitle">Elpris</span> <small id="priceStatus"></small></h2>
+    <div class="pricehead">
+      <div class="stats" id="priceStats"></div>
+      <div class="seg" id="priceDays"></div>
+    </div>
+    <div id="chart"></div>
+    <div class="legend" id="legend"></div>
     <div class="note" id="priceNote"></div>
   </section>
 
@@ -258,22 +289,25 @@ async function loadWeather() {
   }
 }
 
-// ---------- Elpris (Energi Data Service) ----------
-function season(d = new Date()) {
+// ---------- Elpris ----------
+function season(d) {
   const m = d.getMonth(); // 0 = januar
   return (m >= 3 && m <= 8) ? "sommer" : "vinter";
 }
-function priceForHour(h, spot) {
+// Deler prisen op i strøm (spot inkl. moms) og det faste: tillæg, afgifter og transport
+function priceParts(h, spot, date) {
   const P = CONFIG.prices;
-  const net = (P.net[season()] || {})[P.netPerioder[h]] || 0;
-  return spot * 1.25 + P.leverandoerTillaeg + P.elafgift + P.energinet + net;
+  const net = (P.net[season(date)] || {})[P.netPerioder[h]] || 0;
+  const fixed = P.leverandoerTillaeg + P.elafgift + P.energinet + net;
+  const spotM = spot * 1.25;
+  return { h, spotM, fixed, total: spotM + fixed };
 }
 function hasTariffs() {
-  const P = CONFIG.prices, n = P.net[season()] || {};
+  const P = CONFIG.prices, n = P.net[season(new Date())] || {};
   return P.leverandoerTillaeg || P.elafgift || P.energinet || n.lav || n.hoej || n.spids;
 }
 
-// Kilde 1: Energinets Energi Data Service. Returnerer [{h, kr}] med spotpris i kr/kWh ekskl. moms.
+// Kilde 1: Energinets Energi Data Service. Returnerer { "YYYY-MM-DD": [{h, kr}] } med spot i kr/kWh ekskl. moms.
 async function spotFromEnerginet(today) {
   const filter = encodeURIComponent(JSON.stringify({ PriceArea: [CONFIG.priceArea] }));
   const url = "https://api.energidataservice.dk/dataset/DayAheadPrices" +
@@ -282,94 +316,230 @@ async function spotFromEnerginet(today) {
   const r = await fetch(url);
   if (!r.ok) throw new Error("Energinet svarede " + r.status);
   const j = await r.json();
-  const key = isoDate(today), out = [];
+  const keys = [isoDate(today), isoDate(addDays(today, 1))], out = {};
   for (const rec of j.records || []) {
-    if (!rec.TimeDK || !rec.TimeDK.startsWith(key)) continue;
+    const k = (rec.TimeDK || "").slice(0, 10);
+    if (keys.indexOf(k) < 0) continue;
     let dkk = rec.DayAheadPriceDKK;
     if (dkk == null && rec.DayAheadPriceEUR != null) dkk = rec.DayAheadPriceEUR * 7.46;
-    if (dkk != null) out.push({ h: +rec.TimeDK.slice(11, 13), kr: dkk / 1000 }); // kr/MWh → kr/kWh
+    if (dkk != null) (out[k] = out[k] || []).push({ h: +rec.TimeDK.slice(11, 13), kr: dkk / 1000 });
   }
-  if (!out.length) throw new Error("Energinet havde ingen priser for i dag");
+  if (!out[keys[0]]) throw new Error("Energinet havde ingen priser for i dag");
   return out;
 }
 
-// Kilde 2 (reserve): elprisenligenu.dk, som henter de samme Nord Pool-priser.
+// Kilde 2 (reserve): elprisenligenu.dk, som viser de samme Nord Pool-priser.
 async function spotFromElprisen(today) {
-  const url = "https://www.elprisenligenu.dk/api/v1/prices/" + today.getFullYear() + "/" +
-    pad(today.getMonth() + 1) + "-" + pad(today.getDate()) + "_" + CONFIG.priceArea + ".json";
-  const r = await fetch(url);
-  if (!r.ok) throw new Error("Elprisen lige nu svarede " + r.status);
-  const j = await r.json();
-  return j.map(p => ({ h: +p.time_start.slice(11, 13), kr: p.DKK_per_kWh }));
+  const get = async d => {
+    const url = "https://www.elprisenligenu.dk/api/v1/prices/" + d.getFullYear() + "/" +
+      pad(d.getMonth() + 1) + "-" + pad(d.getDate()) + "_" + CONFIG.priceArea + ".json";
+    const r = await fetch(url);
+    if (!r.ok) throw new Error("Elprisen lige nu svarede " + r.status);
+    return (await r.json()).map(p => ({ h: +p.time_start.slice(11, 13), kr: p.DKK_per_kWh }));
+  };
+  const out = {};
+  out[isoDate(today)] = await get(today);
+  try { out[isoDate(addDays(today, 1))] = await get(addDays(today, 1)); } catch (e) { /* morgendagens priser kommer ved 13-tiden */ }
+  return out;
 }
 
+// Kvarterpriser samles til timepriser (gennemsnit)
+function buildRows(list, date) {
+  if (!list || !list.length) return null;
+  const buckets = Array.from({ length: 24 }, () => []);
+  for (const p of list) if (p.h >= 0 && p.h < 24) buckets[p.h].push(p.kr);
+  return buckets.map((a, h) => a.length ? priceParts(h, a.reduce((x, y) => x + y, 0) / a.length, date) : null);
+}
+
+let priceDays = [], selDay = 0, pinnedHour = null, pinTimer = null;
+
 async function loadPrices() {
-  const today = new Date();
-  let spot, fejl = [];
+  const today = new Date(), tomorrow = addDays(today, 1);
+  let map, fejl = [];
   for (const kilde of [spotFromEnerginet, spotFromElprisen]) {
-    try { spot = await kilde(today); break; }
+    try { map = await kilde(today); break; }
     catch (e) { fejl.push(e.message); }
   }
-  if (!spot) {
+  if (!map) {
     const e = new Error(fejl.join(" / "));
     e.userMessage = "Fejl: " + fejl.join(" / ");
     throw e;
   }
-
-  // Priserne kommer i kvarterer. Vi samler dem til timepriser (gennemsnit).
-  const buckets = Array.from({ length: 24 }, () => []);
-  for (const p of spot) if (p.h >= 0 && p.h < 24) buckets[p.h].push(p.kr);
-  const prices = buckets.map((a, h) => a.length ? priceForHour(h, a.reduce((x, y) => x + y, 0) / a.length) : null);
-  renderPrices(prices);
+  priceDays = [
+    { label: "I dag", rows: buildRows(map[isoDate(today)], today) },
+    { label: "I morgen", rows: buildRows(map[isoDate(tomorrow)], tomorrow) }
+  ];
+  if (!priceDays[selDay].rows) selDay = 0;
+  renderPrices();
 }
 
-function renderPrices(prices) {
-  $("priceTitle").textContent = hasTariffs() ? "Elpris i dag" : "Spotpris i dag, inkl. moms";
-  const stats = $("priceStats"), bars = $("bars"), note = $("priceNote");
-  stats.innerHTML = ""; bars.innerHTML = ""; note.textContent = "";
+// "Pæne" trin til y-aksen: 0,10 / 0,25 / 0,50 / 1 / 2 kr osv.
+function niceStep(raw) {
+  const steps = [0.05, 0.1, 0.25, 0.5, 1, 2, 2.5, 5, 10];
+  return steps.find(s => s >= raw) || 10;
+}
+function fmtAxis(v, step) {
+  if (Math.abs(v) < 1e-9) return "0 kr";
+  return (step >= 1 ? String(Math.round(v)) : v.toFixed(2).replace(".", ",")) + " kr";
+}
 
-  const valid = prices.map((v, h) => ({ v, h })).filter(x => x.v != null);
-  if (!valid.length) { note.textContent = "Dagens priser er ikke offentliggjort endnu."; return; }
+function renderPrices() {
+  const day = priceDays[selDay];
+  if (!day) return;
+  const rows = day.rows || [];
+  const isToday = selDay === 0;
+  const nowH = isToday ? new Date().getHours() : -1;
+  const n = CONFIG.prices.billigVindue;
 
-  const nowH = new Date().getHours();
-  const min = valid.reduce((a, b) => b.v < a.v ? b : a);
-  const max = valid.reduce((a, b) => b.v > a.v ? b : a);
+  $("priceTitle").textContent = hasTariffs() ? "Elpris" : "Spotpris inkl. moms";
 
-  const stat = (label, value) => {
-    const s = el("div", "stat"), v = el("div", "v", kr(value));
-    v.appendChild(el("span", null, "kr/kWh"));
+  // Vælger: I dag / I morgen
+  const seg = $("priceDays"); seg.innerHTML = "";
+  if (priceDays[1] && priceDays[1].rows) {
+    priceDays.forEach((d, i) => {
+      const b = el("button", i === selDay ? "on" : "", d.label); b.type = "button";
+      b.onclick = e => { e.stopPropagation(); selDay = i; pinnedHour = null; renderPrices(); };
+      seg.appendChild(b);
+    });
+  }
+
+  const valid = rows.filter(Boolean);
+  const stats = $("priceStats"), note = $("priceNote");
+  stats.innerHTML = ""; note.innerHTML = "";
+  if (!valid.length) { $("chart").innerHTML = ""; note.textContent = "Dagens priser er ikke offentliggjort endnu."; return; }
+
+  const min = valid.reduce((a, b) => b.total < a.total ? b : a);
+  const max = valid.reduce((a, b) => b.total > a.total ? b : a);
+  const avg = valid.reduce((s, r) => s + r.total, 0) / valid.length;
+
+  const stat = (label, value, cls) => {
+    const s = el("div", "stat" + (cls ? " " + cls : "")), v = el("div", "v", kr(value));
+    v.appendChild(el("span", null, "kr"));
     s.appendChild(v); s.appendChild(el("div", "l", label)); stats.appendChild(s);
   };
-  if (prices[nowH] != null) stat("Lige nu", prices[nowH]);
-  stat("Billigst kl. " + pad(min.h), min.v);
-  stat("Dyrest kl. " + pad(max.h), max.v);
+  if (isToday && rows[nowH]) stat("Lige nu", rows[nowH].total, "current");
+  else stat("Gennemsnit", avg);
+  stat("Billigst kl. " + pad(min.h), min.total, "cheap");
+  stat("Dyrest kl. " + pad(max.h), max.total, "dear");
 
-  // Billigste sammenhængende stræk resten af dagen
-  const n = CONFIG.prices.billigVindue;
+  // Billigste sammenhængende stræk (resten af dagen, hvis det er i dag)
   let best = null;
-  for (let s = nowH; s + n <= 24; s++) {
-    const slice = prices.slice(s, s + n);
-    if (slice.some(v => v == null)) continue;
-    const sum = slice.reduce((a, b) => a + b, 0);
+  for (let s = Math.max(0, nowH); s + n <= 24; s++) {
+    const slice = rows.slice(s, s + n);
+    if (slice.some(r => !r)) continue;
+    const sum = slice.reduce((a, r) => a + r.total, 0);
     if (!best || sum < best.sum) best = { s, sum };
   }
 
-  const lo = Math.min(0, min.v), span = (max.v - lo) || 1;
-  prices.forEach((v, h) => {
-    const b = el("div", "bar");
-    if (v == null) { b.style.visibility = "hidden"; }
-    else b.style.height = (6 + 94 * (v - lo) / span) + "%";
-    if (h < nowH) b.classList.add("past");
-    if (best && h >= best.s && h < best.s + n) b.classList.add("cheap");
-    if (h === nowH) b.classList.add("now");
-    bars.appendChild(b);
+  drawLegend(best, n);
+
+  // Tekst under grafen: valgt time, ellers billigste stræk
+  if (pinnedHour != null && rows[pinnedHour]) {
+    const r = rows[pinnedHour];
+    note.appendChild(el("b", "sel", "Kl. " + pad(r.h) + "–" + pad((r.h + 1) % 24 || 24) + ": " + kr(r.total) + " kr/kWh"));
+    if (hasTariffs()) note.appendChild(document.createTextNode(", heraf strøm " + kr(r.spotM) + " kr og transport og afgifter " + kr(r.fixed) + " kr"));
+  } else if (best) {
+    note.appendChild(document.createTextNode("Billigste " + n + " timer " + (isToday ? "resten af dagen" : "i morgen") + ": "));
+    note.appendChild(el("b", null, "kl. " + pad(best.s) + "–" + pad(best.s + n)));
+    note.appendChild(document.createTextNode(", gns. " + kr(best.sum / n) + " kr/kWh. Tryk på en søjle for detaljer."));
+  }
+
+  drawChart(rows, nowH, best, n, min.total, max.total);
+}
+
+function drawChart(rows, nowH, best, n, minT, maxT) {
+  const box = $("chart"); box.innerHTML = "";
+  const W = box.clientWidth || 600, H = box.clientHeight || 200;
+  const padL = 2, padR = 54, padT = 24, padB = 26;
+  const pw = W - padL - padR, ph = H - padT - padB;
+  const lo = Math.min(0, minT);
+  const step = niceStep((maxT - lo) / 4);
+  const top = Math.ceil(maxT / step) * step || step;
+  const bot = Math.floor(lo / step) * step;
+  const y = v => padT + ph * (top - v) / (top - bot);
+  const bw = pw / 24;
+  const NS = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(NS, "svg");
+  svg.setAttribute("viewBox", "0 0 " + W + " " + H);
+  const add = (parent, tag, attrs, text) => {
+    const e = document.createElementNS(NS, tag);
+    for (const k in attrs) e.setAttribute(k, attrs[k]);
+    if (text != null) e.textContent = text;
+    parent.appendChild(e); return e;
+  };
+
+  // Spidslast som svag baggrund, så det er tydeligt, hvorfor aftenen er dyr
+  const per = CONFIG.prices.netPerioder;
+  const s0 = per.indexOf("spids"), s1 = per.lastIndexOf("spids");
+  if (s0 >= 0) add(svg, "rect", { x: padL + s0 * bw, y: padT, width: (s1 - s0 + 1) * bw, height: ph, class: "band" });
+
+  // Vandrette hjælpelinjer med kronebeløb til højre
+  for (let v = bot; v <= top + 1e-9; v += step) {
+    const yy = y(v);
+    add(svg, "line", { x1: padL, x2: padL + pw, y1: yy, y2: yy, class: Math.abs(v) < 1e-9 ? "zero" : "grid" });
+    add(svg, "text", { x: padL + pw + 8, y: yy + 4, class: "ylab" }, fmtAxis(v, step));
+  }
+
+  const level = t => {
+    const rel = (t - minT) / ((maxT - minT) || 1);
+    return rel < 0.34 ? "cheap" : rel > 0.66 ? "dear" : "mid";
+  };
+
+  rows.forEach((r, h) => {
+    if (!r) return;
+    const x = padL + h * bw + 1.5, w = Math.max(2, bw - 3);
+    const g = add(svg, "g", { class: "hr" + (h < nowH ? " past" : "") });
+    const base = Math.max(0, Math.min(r.fixed, r.total));
+    if (base > 0) add(g, "rect", { x, y: y(base), width: w, height: y(0) - y(base), class: "fixed" });
+    if (r.total > base) add(g, "rect", { x, y: y(r.total), width: w, height: y(base) - y(r.total), rx: 2, class: "lvl-" + level(r.total) });
+    if (r.total < 0) add(g, "rect", { x, y: y(0), width: w, height: y(r.total) - y(0), class: "lvl-cheap" });
+
+    const yTop = y(Math.max(r.total, 0)), yBot = y(Math.min(r.total, 0));
+    if (h === nowH) {
+      add(svg, "rect", { x: x - 1.5, y: yTop - 1.5, width: w + 3, height: yBot - yTop + 3, rx: 3, class: "nowbox" });
+      add(svg, "text", { x: x + w / 2, y: yTop - 8, class: "nowlab" }, kr(r.total));
+    }
+    if (h === pinnedHour) {
+      add(svg, "rect", { x: x - 1.5, y: yTop - 1.5, width: w + 3, height: yBot - yTop + 3, rx: 3, class: "selbox" });
+      if (h !== nowH) add(svg, "text", { x: x + w / 2, y: yTop - 8, class: "sellab" }, kr(r.total));
+    }
+
+    // Usynligt trykfelt i fuld højde, så søjlen er nem at ramme
+    const hit = add(svg, "rect", { x: padL + h * bw, y: padT, width: bw, height: ph, class: "hit" });
+    hit.addEventListener("click", e => {
+      e.stopPropagation();
+      pinnedHour = pinnedHour === h ? null : h;
+      clearTimeout(pinTimer);
+      pinTimer = setTimeout(() => { pinnedHour = null; renderPrices(); }, 10000);
+      renderPrices();
+    });
   });
 
+  // Billigste stræk som grøn streg under søjlerne
   if (best) {
-    note.appendChild(document.createTextNode("Billigste " + n + " timer resten af dagen: "));
-    note.appendChild(el("b", null, "kl. " + pad(best.s) + "–" + pad(best.s + n)));
-    note.appendChild(document.createTextNode(", gns. " + kr(best.sum / n) + " kr/kWh"));
+    const yy = y(bot) + 5;
+    add(svg, "line", { x1: padL + best.s * bw + 2, x2: padL + (best.s + n) * bw - 2, y1: yy, y2: yy, class: "win" });
   }
+
+  // Klokkeslæt hver 3. time
+  for (let h = 0; h < 24; h += 3) {
+    add(svg, "text", { x: padL + h * bw + bw / 2, y: H - 4, class: "xlab" }, pad(h));
+  }
+
+  box.appendChild(svg);
+}
+
+function drawLegend(best, n) {
+  const lg = $("legend"); lg.innerHTML = "";
+  const item = (cls, text) => {
+    const s = el("span", "li"); s.appendChild(el("i", "sw " + cls)); s.appendChild(document.createTextNode(text)); lg.appendChild(s);
+  };
+  item("lvl-cheap", "Billig");
+  item("lvl-mid", "Mellem");
+  item("lvl-dear", "Dyr");
+  if (hasTariffs()) item("fixed", "Transport og afgifter");
+  item("band", "Spidslast");
+  if (best) item("win", "Billigste " + n + " timer");
 }
 
 // ---------- Kalender (Google Apps Script) ----------
@@ -437,7 +607,10 @@ function refreshAll() { loaders.weather(); loaders.prices(); loaders.calendar();
 
 // Tryk på et panel for at opdatere det med det samme
 $("week").onclick = loaders.weather;
-$("price").onclick = loaders.prices;
+$("price").querySelector("h2").onclick = loaders.prices;
+// Tegn grafen igen, når iPad'en vendes eller vinduet ændrer størrelse
+let resizeTimer;
+window.addEventListener("resize", () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(renderPrices, 150); });
 $("calStatus").onclick = e => {
   e.stopPropagation();
   if ($("calStatus").classList.contains("err")) showSetup(); else loaders.calendar();
