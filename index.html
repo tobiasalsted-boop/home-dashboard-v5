@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Hjem">
+<title>Hjem</title>
+<style>
+/* Aftenblå baggrund, lampelys-gul for "nu" */
+:root {
+  --bg: #1c2633; --panel: #243143; --line: #33445a;
+  --text: #e9eef4; --muted: #8fa0b3; --lit: #f4c46a;
+  --bar: #3a4d66; --cheap: #7cc4b0; --err: #ff8a7a;
+}
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #e4eaf0; --panel: #ffffff; --line: #dde3ea;
+    --text: #1c2633; --muted: #5d6b7b; --lit: #d9962a;
+    --bar: #c9d4e0; --cheap: #2f8f78; --err: #b3261e;
+  }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
+  font-family: "Avenir Next", Avenir, -apple-system, "Helvetica Neue", sans-serif;
+  -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; }
+body { padding: env(safe-area-inset-top, 0) env(safe-area-inset-right, 0) env(safe-area-inset-bottom, 0) env(safe-area-inset-left, 0); }
+
+.app { height: 100%; display: grid; gap: 16px; padding: 22px 28px 26px;
+  grid-template-columns: 1fr 1.3fr; grid-template-rows: auto 1fr auto; }
+header { grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: flex-end; }
+#clock { font-size: 96px; font-weight: 200; line-height: .9; letter-spacing: -3px; font-variant-numeric: tabular-nums; }
+#date { font-size: 21px; color: var(--muted); margin-top: 10px; }
+.now { display: flex; align-items: center; gap: 16px; text-align: right; }
+.now .icon { font-size: 60px; line-height: 1; }
+.now .temp { font-size: 60px; font-weight: 200; line-height: 1; }
+.now .desc { color: var(--muted); font-size: 17px; margin-top: 4px; }
+
+.panel { background: var(--panel); border-radius: 24px; padding: 18px 22px; min-height: 0; overflow: hidden; display: flex; flex-direction: column; }
+.panel h2 { font-size: 18px; font-weight: 600; margin: 0 0 12px; display: flex; justify-content: space-between; align-items: baseline; }
+.panel h2 small { font-size: 13px; font-weight: 400; color: var(--muted); }
+.panel h2 small.err { color: var(--err); }
+
+#cal { grid-column: 1; grid-row: 2 / 4; }
+#price { grid-column: 2; grid-row: 2; }
+#week { grid-column: 2; grid-row: 3; }
+
+/* Kalender */
+#calList { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.day { margin-bottom: 16px; }
+.day h3 { font-size: 15px; font-weight: 600; color: var(--muted); margin: 0 0 4px; }
+.day.today h3 { color: var(--lit); }
+.ev { display: flex; gap: 14px; padding: 8px 0; border-top: 1px solid var(--line); font-size: 18px; }
+.day h3 + .ev { border-top: 0; }
+.ev time { flex: 0 0 84px; color: var(--muted); font-variant-numeric: tabular-nums; font-size: 16px; padding-top: 1px; }
+.ev .t { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ev.past { opacity: .4; }
+.empty { color: var(--muted); font-size: 16px; padding: 6px 0; }
+.connect { margin-top: 8px; font: inherit; font-size: 16px; padding: 10px 16px; border-radius: 12px; border: 0; background: var(--lit); color: #3a2600; }
+
+/* Elpris */
+.stats { display: flex; gap: 32px; margin-bottom: 14px; }
+.stat .v { font-size: 34px; font-weight: 300; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.stat .v span { font-size: 16px; color: var(--muted); margin-left: 4px; }
+.stat .l { font-size: 14px; color: var(--muted); }
+.bars { flex: 1; min-height: 110px; display: flex; align-items: flex-end; gap: 3px; }
+.bar { flex: 1; background: var(--bar); border-radius: 4px 4px 2px 2px; min-height: 4px; }
+.bar.cheap { background: var(--cheap); }
+.bar.past { opacity: .35; }
+.bar.now { background: var(--lit); opacity: 1; }
+.axis { display: flex; justify-content: space-between; color: var(--muted); font-size: 12px; margin-top: 6px; font-variant-numeric: tabular-nums; }
+.note { font-size: 14px; color: var(--muted); margin-top: 10px; }
+.note b { color: var(--cheap); font-weight: 600; }
+
+/* Uge */
+.weekgrid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; }
+.wd .n { font-size: 15px; color: var(--muted); }
+.wd.today .n { color: var(--lit); font-weight: 600; }
+.wd .i { font-size: 30px; margin: 6px 0 4px; }
+.wd .hi { font-size: 19px; font-variant-numeric: tabular-nums; }
+.wd .lo { font-size: 15px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.wd .rain { font-size: 12px; color: var(--muted); min-height: 16px; margin-top: 2px; }
+
+@media (orientation: portrait) {
+  .app { grid-template-columns: 1fr; grid-template-rows: auto auto auto 1fr; }
+  #price { grid-column: 1; grid-row: 2; }
+  #week { grid-column: 1; grid-row: 3; }
+  #cal { grid-column: 1; grid-row: 4; }
+  .bars { min-height: 140px; }
+}
+
+/* Opsætning */
+#setup { position: fixed; inset: 0; background: var(--bg); display: none; align-items: center; justify-content: center; padding: 24px; }
+#setup.show { display: flex; }
+#setup .box { max-width: 480px; width: 100%; }
+#setup h1 { font-weight: 500; font-size: 26px; margin: 0 0 8px; }
+#setup p { color: var(--muted); line-height: 1.5; margin: 0 0 18px; }
+#setup input { width: 100%; font: inherit; font-size: 16px; padding: 14px; border-radius: 14px; border: 1px solid var(--muted);
+  background: var(--panel); color: var(--text); margin-bottom: 12px; -webkit-user-select: text; user-select: text; }
+#setup .row { display: flex; gap: 10px; }
+#setup button { font: inherit; font-size: 17px; font-weight: 500; padding: 13px 20px; border-radius: 14px; border: 0; }
+#setupSave { background: var(--lit); color: #3a2600; }
+#setupSkip { background: transparent; color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div>
+      <div id="clock">--:--</div>
+      <div id="date"></div>
+    </div>
+    <div class="now" id="now"></div>
+  </header>
+
+  <section class="panel" id="cal">
+    <h2>Kalender <small id="calStatus"></small></h2>
+    <div id="calList"></div>
+  </section>
+
+  <section class="panel" id="price">
+    <h2><span id="priceTitle">Elpris i dag</span> <small id="priceStatus"></small></h2>
+    <div class="stats" id="priceStats"></div>
+    <div class="bars" id="bars"></div>
+    <div class="axis"><span>00</span><span>06</span><span>12</span><span>18</span><span>24</span></div>
+    <div class="note" id="priceNote"></div>
+  </section>
+
+  <section class="panel" id="week">
+    <h2><span id="weekTitle">Vejret</span> <small id="weatherStatus"></small></h2>
+    <div class="weekgrid" id="weekGrid"></div>
+  </section>
+</div>
+
+<div id="setup">
+  <div class="box">
+    <h1>Forbind kalenderen</h1>
+    <p>Indsæt adressen til dit Google Apps Script, inklusive <b>?key=</b> og din hemmelige nøgle. Den gemmes kun på denne iPad.</p>
+    <input id="setupInput" type="url" placeholder="https://script.google.com/macros/s/…/exec?key=…" autocomplete="off" autocapitalize="off" autocorrect="off">
+    <div class="row">
+      <button id="setupSave" type="button">Forbind</button>
+      <button id="setupSkip" type="button">Spring over</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ================= Tilpas her =================
+const CONFIG = {
+  place: { name: "Hinnerup", lat: 56.267, lon: 10.067 },
+  priceArea: "DK1", // Vest for Storebælt
+
+  // Alle beløb i kr. pr. kWh EKSKL. moms. Står de på 0, vises spotprisen inkl. moms.
+  // Find satserne på din elregning eller hos dit netselskab.
+  prices: {
+    leverandoerTillaeg: 0, // AURAs tillæg til spotprisen (FlexEl)
+    elafgift: 0,           // Statens elafgift
+    energinet: 0,          // Energinets nettarif + systemtarif samlet
+    net: { lav: 0, hoej: 0, spids: 0 }, // Dit netselskabs tidstarif
+    // Hvilken netperiode hver time (kl. 0–23) hører til. Typisk inddeling, tjek dit netselskab.
+    netPerioder: [
+      "lav","lav","lav","lav","lav","lav",                     // 00–06
+      "hoej","hoej","hoej","hoej","hoej","hoej",               // 06–12
+      "hoej","hoej","hoej","hoej","hoej",                      // 12–17
+      "spids","spids","spids","spids",                         // 17–21
+      "hoej","hoej","hoej"                                     // 21–24
+    ],
+    billigVindue: 3 // Antal timer i "billigste stræk"
+  },
+
+  calendarDays: 7,
+  refreshMinutes: { weather: 30, prices: 15, calendar: 10 }
+};
+// ==============================================
+
+const $ = id => document.getElementById(id);
+const pad = n => String(n).padStart(2, "0");
+const DAYS = ["søndag", "mandag", "tirsdag", "onsdag", "torsdag", "fredag", "lørdag"];
+const DAYS_SHORT = ["Søn", "Man", "Tir", "Ons", "Tor", "Fre", "Lør"];
+const MONTHS = ["januar", "februar", "marts", "april", "maj", "juni", "juli", "august", "september", "oktober", "november", "december"];
+const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+const hhmm = d => pad(d.getHours()) + ":" + pad(d.getMinutes());
+const isoDate = d => d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
+const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
+const startOfDay = d => { const x = new Date(d); x.setHours(0, 0, 0, 0); return x; };
+const kr = v => v.toFixed(2).replace(".", ",");
+const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+
+function setStatus(id, text, isErr) { const s = $(id); s.textContent = text; s.className = isErr ? "err" : ""; }
+
+async function run(statusId, fn) {
+  try {
+    await fn();
+    setStatus(statusId, "Opdateret " + hhmm(new Date()));
+  } catch (e) {
+    console.error(e);
+    setStatus(statusId, e.userMessage || "Kunne ikke hente. Prøver igen snart", true);
+  }
+}
+
+// ---------- Ur ----------
+function tick() {
+  const d = new Date();
+  $("clock").textContent = hhmm(d);
+  $("date").textContent = cap(DAYS[d.getDay()]) + " " + d.getDate() + ". " + MONTHS[d.getMonth()];
+}
+
+// ---------- Vejr (Open-Meteo) ----------
+const WMO = {
+  0: ["☀️", "Klart"], 1: ["🌤️", "Mest klart"], 2: ["⛅", "Delvist skyet"], 3: ["☁️", "Overskyet"],
+  45: ["🌫️", "Tåge"], 48: ["🌫️", "Rimtåge"],
+  51: ["🌦️", "Let støvregn"], 53: ["🌦️", "Støvregn"], 55: ["🌧️", "Kraftig støvregn"],
+  56: ["🌧️", "Isslag"], 57: ["🌧️", "Isslag"],
+  61: ["🌦️", "Let regn"], 63: ["🌧️", "Regn"], 65: ["🌧️", "Kraftig regn"], 66: ["🌧️", "Isslag"], 67: ["🌧️", "Isslag"],
+  71: ["🌨️", "Let sne"], 73: ["🌨️", "Sne"], 75: ["❄️", "Kraftig sne"], 77: ["🌨️", "Snefnug"],
+  80: ["🌦️", "Byger"], 81: ["🌧️", "Regnbyger"], 82: ["🌧️", "Kraftige byger"],
+  85: ["🌨️", "Snebyger"], 86: ["🌨️", "Kraftige snebyger"],
+  95: ["⛈️", "Torden"], 96: ["⛈️", "Torden og hagl"], 99: ["⛈️", "Torden og hagl"]
+};
+const wmo = c => WMO[c] || ["🌡️", ""];
+
+async function loadWeather() {
+  const p = CONFIG.place;
+  const url = "https://api.open-meteo.com/v1/forecast?latitude=" + p.lat + "&longitude=" + p.lon +
+    "&current=temperature_2m,weather_code,wind_speed_10m" +
+    "&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum" +
+    "&timezone=Europe%2FCopenhagen&forecast_days=7&wind_speed_unit=ms";
+  const r = await fetch(url);
+  if (!r.ok) throw new Error("Vejr: HTTP " + r.status);
+  const j = await r.json();
+
+  const c = j.current, [icon, desc] = wmo(c.weather_code);
+  const now = $("now"); now.innerHTML = "";
+  const txt = el("div");
+  txt.appendChild(el("div", "temp", Math.round(c.temperature_2m) + "°"));
+  txt.appendChild(el("div", "desc", desc + ", vind " + Math.round(c.wind_speed_10m) + " m/s"));
+  now.appendChild(el("div", "icon", icon));
+  now.appendChild(txt);
+
+  $("weekTitle").textContent = "Vejret i " + p.name;
+  const g = $("weekGrid"); g.innerHTML = "";
+  const d = j.daily;
+  for (let i = 0; i < d.time.length; i++) {
+    const day = new Date(d.time[i] + "T12:00");
+    const box = el("div", "wd" + (i === 0 ? " today" : ""));
+    box.appendChild(el("div", "n", i === 0 ? "I dag" : DAYS_SHORT[day.getDay()]));
+    box.appendChild(el("div", "i", wmo(d.weather_code[i])[0]));
+    box.appendChild(el("div", "hi", Math.round(d.temperature_2m_max[i]) + "°"));
+    box.appendChild(el("div", "lo", Math.round(d.temperature_2m_min[i]) + "°"));
+    const mm = d.precipitation_sum[i];
+    box.appendChild(el("div", "rain", mm >= 0.5 ? String(Math.round(mm * 10) / 10).replace(".", ",") + " mm" : ""));
+    g.appendChild(box);
+  }
+}
+
+// ---------- Elpris (Energi Data Service) ----------
+function priceForHour(h, spot) {
+  const P = CONFIG.prices;
+  const net = P.net[P.netPerioder[h]] || 0;
+  return (spot + P.leverandoerTillaeg + P.elafgift + P.energinet + net) * 1.25;
+}
+function hasTariffs() {
+  const P = CONFIG.prices;
+  return P.leverandoerTillaeg || P.elafgift || P.energinet || P.net.lav || P.net.hoej || P.net.spids;
+}
+
+async function loadPrices() {
+  const today = new Date();
+  const filter = encodeURIComponent(JSON.stringify({ PriceArea: [CONFIG.priceArea] }));
+  // Bred tidsramme, så tidszoner ikke driller. Vi filtrerer på dansk dato bagefter.
+  const url = "https://api.energidataservice.dk/dataset/DayAheadPrices" +
+    "?start=" + isoDate(addDays(today, -1)) + "T00:00&end=" + isoDate(addDays(today, 2)) + "T00:00" +
+    "&filter=" + filter + "&sort=TimeDK%20asc&limit=1000";
+  const r = await fetch(url);
+  if (!r.ok) throw new Error("Elpris: HTTP " + r.status);
+  const j = await r.json();
+
+  // Priserne kommer i kvarterer. Vi samler dem til timepriser (gennemsnit).
+  const key = isoDate(today);
+  const buckets = Array.from({ length: 24 }, () => []);
+  for (const rec of j.records || []) {
+    if (!rec.TimeDK || !rec.TimeDK.startsWith(key)) continue;
+    let dkk = rec.DayAheadPriceDKK;
+    if (dkk == null && rec.DayAheadPriceEUR != null) dkk = rec.DayAheadPriceEUR * 7.46;
+    if (dkk != null) buckets[+rec.TimeDK.slice(11, 13)].push(dkk / 1000); // kr/MWh → kr/kWh
+  }
+  const prices = buckets.map((a, h) => a.length ? priceForHour(h, a.reduce((x, y) => x + y, 0) / a.length) : null);
+  renderPrices(prices);
+}
+
+function renderPrices(prices) {
+  $("priceTitle").textContent = hasTariffs() ? "Elpris i dag" : "Spotpris i dag, inkl. moms";
+  const stats = $("priceStats"), bars = $("bars"), note = $("priceNote");
+  stats.innerHTML = ""; bars.innerHTML = ""; note.textContent = "";
+
+  const valid = prices.map((v, h) => ({ v, h })).filter(x => x.v != null);
+  if (!valid.length) { note.textContent = "Dagens priser er ikke offentliggjort endnu."; return; }
+
+  const nowH = new Date().getHours();
+  const min = valid.reduce((a, b) => b.v < a.v ? b : a);
+  const max = valid.reduce((a, b) => b.v > a.v ? b : a);
+
+  const stat = (label, value) => {
+    const s = el("div", "stat"), v = el("div", "v", kr(value));
+    v.appendChild(el("span", null, "kr/kWh"));
+    s.appendChild(v); s.appendChild(el("div", "l", label)); stats.appendChild(s);
+  };
+  if (prices[nowH] != null) stat("Lige nu", prices[nowH]);
+  stat("Billigst kl. " + pad(min.h), min.v);
+  stat("Dyrest kl. " + pad(max.h), max.v);
+
+  // Billigste sammenhængende stræk resten af dagen
+  const n = CONFIG.prices.billigVindue;
+  let best = null;
+  for (let s = nowH; s + n <= 24; s++) {
+    const slice = prices.slice(s, s + n);
+    if (slice.some(v => v == null)) continue;
+    const sum = slice.reduce((a, b) => a + b, 0);
+    if (!best || sum < best.sum) best = { s, sum };
+  }
+
+  const lo = Math.min(0, min.v), span = (max.v - lo) || 1;
+  prices.forEach((v, h) => {
+    const b = el("div", "bar");
+    if (v == null) { b.style.visibility = "hidden"; }
+    else b.style.height = (6 + 94 * (v - lo) / span) + "%";
+    if (h < nowH) b.classList.add("past");
+    if (best && h >= best.s && h < best.s + n) b.classList.add("cheap");
+    if (h === nowH) b.classList.add("now");
+    bars.appendChild(b);
+  });
+
+  if (best) {
+    note.appendChild(document.createTextNode("Billigste " + n + " timer resten af dagen: "));
+    note.appendChild(el("b", null, "kl. " + pad(best.s) + "–" + pad(best.s + n)));
+    note.appendChild(document.createTextNode(", gns. " + kr(best.sum / n) + " kr/kWh"));
+  }
+}
+
+// ---------- Kalender (Google Apps Script) ----------
+let memCalUrl = null;
+function getCalUrl() { try { return localStorage.getItem("cal_url") || memCalUrl; } catch (e) { return memCalUrl; } }
+function setCalUrl(u) { memCalUrl = u; try { u ? localStorage.setItem("cal_url", u) : localStorage.removeItem("cal_url"); } catch (e) {} }
+
+function showSetup() { $("setupInput").value = ""; $("setup").className = "show"; }
+function hideSetup() { $("setup").className = ""; }
+
+function renderCalNotConnected() {
+  const list = $("calList"); list.innerHTML = "";
+  list.appendChild(el("div", "empty", "Kalenderen er ikke forbundet."));
+  const b = el("button", "connect", "Forbind kalender"); b.type = "button"; b.onclick = showSetup;
+  list.appendChild(b);
+  setStatus("calStatus", "");
+}
+
+async function loadCalendar() {
+  const base = getCalUrl();
+  if (!base) { renderCalNotConnected(); return; }
+  const url = base + (base.indexOf("?") >= 0 ? "&" : "?") + "days=" + CONFIG.calendarDays;
+  const r = await fetch(url);
+  if (!r.ok) throw new Error("Kalender: HTTP " + r.status);
+  const j = await r.json();
+  if (j.error) {
+    const e = new Error(j.error);
+    e.userMessage = j.error === "unauthorized" ? "Nøglen blev afvist. Tryk for at forbinde igen" : "Kalenderfejl: " + j.error;
+    throw e;
+  }
+  renderCalendar(j.events || []);
+}
+
+function renderCalendar(events) {
+  const list = $("calList"); list.innerHTML = "";
+  const now = new Date(), today = startOfDay(now);
+  const evs = events.map(e => ({ title: e.title, allDay: e.allDay, start: new Date(e.start), end: new Date(e.end) }));
+
+  for (let i = 0; i < CONFIG.calendarDays; i++) {
+    const ds = addDays(today, i), de = addDays(today, i + 1);
+    const todays = evs.filter(e => e.start < de && e.end > ds);
+    if (!todays.length && i > 0) continue;
+
+    const box = el("div", "day" + (i === 0 ? " today" : ""));
+    box.appendChild(el("h3", null, i === 0 ? "I dag" : i === 1 ? "I morgen" : cap(DAYS[ds.getDay()]) + " " + ds.getDate() + ". " + MONTHS[ds.getMonth()]));
+    if (!todays.length) box.appendChild(el("div", "empty", "Intet i kalenderen"));
+    for (const e of todays) {
+      const row = el("div", "ev" + (!e.allDay && e.end < now ? " past" : ""));
+      const time = el("time", null, e.allDay ? "Hele dagen" : e.start < ds ? "Fortsat" : hhmm(e.start));
+      row.appendChild(time);
+      row.appendChild(el("div", "t", e.title));
+      box.appendChild(row);
+    }
+    list.appendChild(box);
+  }
+}
+
+// ---------- Opdatering ----------
+const loaders = {
+  weather: () => run("weatherStatus", loadWeather),
+  prices: () => run("priceStatus", loadPrices),
+  calendar: () => run("calStatus", loadCalendar)
+};
+function refreshAll() { loaders.weather(); loaders.prices(); loaders.calendar(); }
+
+// Tryk på et panel for at opdatere det med det samme
+$("week").onclick = loaders.weather;
+$("price").onclick = loaders.prices;
+$("calStatus").onclick = e => {
+  e.stopPropagation();
+  if ($("calStatus").classList.contains("err")) showSetup(); else loaders.calendar();
+};
+$("cal").querySelector("h2").onclick = loaders.calendar;
+
+$("setupSave").onclick = () => {
+  const u = $("setupInput").value.trim();
+  if (!/^https:\/\/script\.google\.com\/.+key=/.test(u)) {
+    $("setupInput").focus();
+    $("setupInput").placeholder = "Adressen skal starte med https://script.google.com og indeholde key=";
+    $("setupInput").value = "";
+    return;
+  }
+  setCalUrl(u); hideSetup(); loaders.calendar();
+};
+$("setupSkip").onclick = () => { hideSetup(); renderCalNotConnected(); };
+
+// Når iPad'en vågner eller appen kommer frem igen
+let hiddenAt = 0;
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) hiddenAt = Date.now();
+  else if (Date.now() - hiddenAt > 5 * 60 * 1000) refreshAll();
+});
+
+// Genindlæs siden lige efter midnat, så "i dag" altid passer
+(function scheduleMidnight() {
+  const n = new Date(), next = new Date(n.getFullYear(), n.getMonth(), n.getDate() + 1, 0, 1, 0);
+  setTimeout(() => location.reload(), next - n);
+})();
+
+tick(); setInterval(tick, 10000);
+refreshAll();
+setInterval(loaders.weather, CONFIG.refreshMinutes.weather * 60000);
+setInterval(loaders.prices, CONFIG.refreshMinutes.prices * 60000);
+setInterval(loaders.calendar, CONFIG.refreshMinutes.calendar * 60000);
+if (!getCalUrl()) showSetup();
+</script>
+</body>
+</html>
