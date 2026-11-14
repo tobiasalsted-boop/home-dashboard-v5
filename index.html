@@ -151,14 +151,18 @@ const CONFIG = {
   place: { name: "Hinnerup", lat: 56.267, lon: 10.067 },
   priceArea: "DK1", // Vest for Storebælt
 
-  // Alle beløb i kr. pr. kWh EKSKL. moms. Står de på 0, vises spotprisen inkl. moms.
-  // Find satserne på din elregning eller hos dit netselskab.
+  // Alle beløb i kr. pr. kWh INKL. moms, som de står hos selskaberne.
+  // Spotprisen får automatisk lagt moms på. Satser for 2026 – tjek igen i januar.
   prices: {
-    leverandoerTillaeg: 0, // AURAs tillæg til spotprisen (FlexEl)
-    elafgift: 0,           // Statens elafgift
-    energinet: 0,          // Energinets nettarif + systemtarif samlet
-    net: { lav: 0, hoej: 0, spids: 0 }, // Dit netselskabs tidstarif
-    // Hvilken netperiode hver time (kl. 0–23) hører til. Typisk inddeling, tjek dit netselskab.
+    leverandoerTillaeg: 0.10, // AURA FlexEl
+    elafgift: 0.01,           // Statens elafgift (0,8 øre + moms)
+    energinet: 0.1438,        // Energinets net- og systemtarif
+    // Dinels nettarif C for private. Vinter = oktober–marts, sommer = april–september.
+    net: {
+      vinter: { lav: 0.0769, hoej: 0.2308, spids: 0.6924 },
+      sommer: { lav: 0.0769, hoej: 0.1154, spids: 0.3000 }
+    },
+    // Hvilken netperiode hver time (kl. 0–23) hører til hos Dinel.
     netPerioder: [
       "lav","lav","lav","lav","lav","lav",                     // 00–06
       "hoej","hoej","hoej","hoej","hoej","hoej",               // 06–12
@@ -255,14 +259,18 @@ async function loadWeather() {
 }
 
 // ---------- Elpris (Energi Data Service) ----------
+function season(d = new Date()) {
+  const m = d.getMonth(); // 0 = januar
+  return (m >= 3 && m <= 8) ? "sommer" : "vinter";
+}
 function priceForHour(h, spot) {
   const P = CONFIG.prices;
-  const net = P.net[P.netPerioder[h]] || 0;
-  return (spot + P.leverandoerTillaeg + P.elafgift + P.energinet + net) * 1.25;
+  const net = (P.net[season()] || {})[P.netPerioder[h]] || 0;
+  return spot * 1.25 + P.leverandoerTillaeg + P.elafgift + P.energinet + net;
 }
 function hasTariffs() {
-  const P = CONFIG.prices;
-  return P.leverandoerTillaeg || P.elafgift || P.energinet || P.net.lav || P.net.hoej || P.net.spids;
+  const P = CONFIG.prices, n = P.net[season()] || {};
+  return P.leverandoerTillaeg || P.elafgift || P.energinet || n.lav || n.hoej || n.spids;
 }
 
 async function loadPrices() {
