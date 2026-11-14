@@ -27,8 +27,8 @@ html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
   -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; }
 body { padding: env(safe-area-inset-top, 0) env(safe-area-inset-right, 0) env(safe-area-inset-bottom, 0) env(safe-area-inset-left, 0); }
 
-.app { height: 100%; display: grid; gap: 16px; padding: 22px 28px 26px;
-  grid-template-columns: 1fr 1.3fr; grid-template-rows: auto 1fr auto; }
+.app { min-height: 100%; display: grid; gap: 16px; padding: 22px 28px 26px;
+  grid-template-columns: 1fr 1.3fr; grid-template-rows: auto minmax(400px, auto) auto auto auto; }
 header { grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: flex-end; }
 #clock { font-size: 96px; font-weight: 200; line-height: .9; letter-spacing: -3px; font-variant-numeric: tabular-nums; }
 #date { font-size: 21px; color: var(--muted); margin-top: 10px; }
@@ -45,6 +45,9 @@ header { grid-column: 1 / -1; display: flex; justify-content: space-between; ali
 #cal { grid-column: 1; grid-row: 2 / 4; }
 #price { grid-column: 2; grid-row: 2; }
 #week { grid-column: 2; grid-row: 3; }
+#school { grid-column: 1 / -1; grid-row: 4; }
+#sfo { grid-column: 1 / -1; grid-row: 5; }
+#calList { contain: size; min-height: 0; }
 
 /* Kalender */
 #calList { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
@@ -52,8 +55,7 @@ header { grid-column: 1 / -1; display: flex; justify-content: space-between; ali
 .day h3 { font-size: 15px; font-weight: 600; color: var(--muted); margin: 0 0 4px; }
 .day.today h3 { color: var(--lit); }
 .ev { display: flex; gap: 14px; padding: 8px 0; border-top: 1px solid var(--line); font-size: 18px; }
-.day h3 + .ev { border-top: 0; }
-.ev time { flex: 0 0 84px; color: var(--muted); font-variant-numeric: tabular-nums; font-size: 16px; padding-top: 1px; }
+.day h3 + .ev, .day h3 + .ev time { flex: 0 0 84px; color: var(--muted); font-variant-numeric: tabular-nums; font-size: 16px; padding-top: 1px; }
 .ev .t { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ev.past { opacity: .4; }
 .empty { color: var(--muted); font-size: 16px; padding: 6px 0; }
@@ -101,6 +103,34 @@ header { grid-column: 1 / -1; display: flex; justify-content: space-between; ali
 .note b { color: var(--cheap); font-weight: 600; }
 .note b.sel { color: var(--text); }
 
+/* Skema */
+.dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 8px; vertical-align: 1px; flex-shrink: 0; }
+#school h2 .seg { font-weight: 400; }
+.kids { display: grid; gap: 28px; }
+.kid { min-width: 0; }
+.kidhead { display: flex; align-items: baseline; font-size: 19px; padding-bottom: 8px; border-bottom: 1px solid var(--line); margin-bottom: 4px; }
+.kidhead .dot { align-self: center; }
+.kidhead .span { margin-left: auto; color: var(--muted); font-size: 16px; font-variant-numeric: tabular-nums; }
+.lesson, .extra { display: flex; gap: 14px; padding: 5px 0; font-size: 17px; }
+.lesson time, .extra time { flex: 0 0 52px; color: var(--muted); font-size: 15px; font-variant-numeric: tabular-nums; padding-top: 1px; }
+.lesson .t, .extra .t { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lesson.past { opacity: .4; }
+.lesson.cancelled .t { text-decoration: line-through; color: var(--dear); }
+.lesson.changed .t { color: var(--dear); }
+.extra { color: var(--lit); border-top: 1px dashed var(--line); margin-top: 4px; }
+.extra time { color: var(--lit); }
+
+/* SFO */
+.sfoweek { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+.sfoday { border-radius: 16px; padding: 12px 12px 6px; min-width: 0; }
+.sfoday.today { background: var(--chip); }
+.sfoday h3 { font-size: 15px; font-weight: 600; color: var(--muted); margin: 0 0 8px; }
+.sfoday.today h3 { color: var(--lit); }
+.act { display: flex; gap: 10px; align-items: flex-start; padding: 6px 0; }
+.act .ico { font-size: 22px; line-height: 1.1; width: 26px; text-align: center; flex-shrink: 0; }
+.act .n { font-size: 15px; line-height: 1.25; }
+.act .tm { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; margin-top: 1px; }
+
 /* Uge */
 .weekgrid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; }
 .wd .n { font-size: 15px; color: var(--muted); }
@@ -111,10 +141,12 @@ header { grid-column: 1 / -1; display: flex; justify-content: space-between; ali
 .wd .rain { font-size: 12px; color: var(--muted); min-height: 16px; margin-top: 2px; }
 
 @media (orientation: portrait) {
-  .app { grid-template-columns: 1fr; grid-template-rows: auto auto auto 1fr; }
+  .app { grid-template-columns: 1fr; grid-template-rows: auto; }
   #price { grid-column: 1; grid-row: 2; }
   #week { grid-column: 1; grid-row: 3; }
-  #cal { grid-column: 1; grid-row: 4; }
+  #cal { grid-column: 1; grid-row: 4; height: 420px; }
+  #school { grid-row: 5; }
+  #sfo { grid-row: 6; }
   #chart { min-height: 200px; }
 }
 
@@ -162,6 +194,16 @@ header { grid-column: 1 / -1; display: flex; justify-content: space-between; ali
     <h2><span id="weekTitle">Vejret</span> <small id="weatherStatus"></small></h2>
     <div class="weekgrid" id="weekGrid"></div>
   </section>
+
+  <section class="panel" id="school">
+    <h2>Skema <div class="seg" id="schoolDays"></div></h2>
+    <div class="kids" id="kids"></div>
+  </section>
+
+  <section class="panel" id="sfo">
+    <h2>SFO-aktiviteter <small id="sfoNote"></small></h2>
+    <div class="sfoweek" id="sfoWeek"></div>
+  </section>
 </div>
 
 <div id="setup">
@@ -202,6 +244,45 @@ const CONFIG = {
       "hoej","hoej","hoej"                                     // 21–24
     ],
     billigVindue: 3 // Antal timer i "billigste stræk"
+  },
+
+  // SFO-aktiviteter pr. ugedag (1 = mandag … 5 = fredag).
+  // Opdatér listen, når en ny periode starter. Efter "opdaterSenest" viser feltet en påmindelse.
+  sfo: {
+    periode: "Efterår 2026",
+    opdaterSenest: "2027-02-15",
+    dage: {
+      1: [
+        { tid: "13:00–15:00", navn: "Floorball i Gl. Gym", ikon: "🏑" },
+        { tid: "13:00–15:30", navn: "Spil på broen for 0. årgang", ikon: "🎲" },
+        { tid: "13:00–15:00", navn: "SFO-kor i 1.D", ikon: "🎵" },
+        { tid: "13:00–15:30", navn: "Krea på værkstedet", ikon: "🎨" }
+      ],
+      2: [
+        { tid: "14:00–15:45", navn: "Fantasidyr på krea", ikon: "🦄" },
+        { tid: "14:00–15:00", navn: "Hal og gymnastiksal", ikon: "🤸" },
+        { tid: "14:00–15:30", navn: "Mindfulness 0.C", ikon: "🧘" }
+      ],
+      3: [
+        { tid: "13:00–15:00", navn: "Bål", ikon: "🔥" },
+        { tid: "13:00–15:00", navn: "Gammel Gymnastiksal", ikon: "🤸" },
+        { tid: "13:00–15:00", navn: "Snitte på legepladsen", ikon: "🪵" },
+        { tid: "13:00–15:30", navn: "Krea på værkstedet", ikon: "🎨" }
+      ],
+      4: [
+        { tid: "14:00–15:00", navn: "Mooncar/løbehjulræs v. 0.kl.", ikon: "🛴" },
+        { tid: "14:00–15:30", navn: "Lego i 0.C", ikon: "🧱" },
+        { tid: "14:00–15:30", navn: "Skak på broen", ikon: "♟️" },
+        { tid: "14:00–15:30", navn: "Perler og Historie Broen", ikon: "📿" },
+        { tid: "14:00–15:30", navn: "Rock og korssting på værkstedet", ikon: "🧵" }
+      ],
+      5: [
+        { tid: "12:00–14:00", navn: "Gymnastiksal", ikon: "🤸" },
+        { tid: "12:00–14:00", navn: "Krea", ikon: "🎨" },
+        { tid: "12:00–14:00", navn: "Stor Kamp", ikon: "🏃" },
+        { tid: "12:00–15:30", navn: "Skak på broen", ikon: "♟️" }
+      ]
+    }
   },
 
   calendarDays: 7,
@@ -556,6 +637,7 @@ function renderCalNotConnected() {
   const b = el("button", "connect", "Forbind kalender"); b.type = "button"; b.onclick = showSetup;
   list.appendChild(b);
   setStatus("calStatus", "");
+  renderSchool();
 }
 
 async function loadCalendar() {
@@ -573,10 +655,31 @@ async function loadCalendar() {
   renderCalendar(j.events || []);
 }
 
+// Farver pr. barn (i alfabetisk rækkefølge)
+const CHILD_COLORS = ["#8fb4f0", "#e79cc2", "#b7d77a", "#f0b97a"];
+const childColor = {};
+function colorFor(who) {
+  if (!(who in childColor)) childColor[who] = CHILD_COLORS[Object.keys(childColor).length % CHILD_COLORS.length];
+  return childColor[who];
+}
+const dot = who => { const d = el("i", "dot"); d.style.background = colorFor(who); return d; };
+const dayLabel = (ds, i) => i === 0 ? "I dag" : i === 1 ? "I morgen" : cap(DAYS[ds.getDay()]) + " " + ds.getDate() + ". " + MONTHS[ds.getMonth()];
+
+let lastEvents = [];
+
+function parseEvents() {
+  return lastEvents.map(e => ({
+    title: e.title, allDay: e.allDay, start: new Date(e.start), end: new Date(e.end),
+    who: e.who || "", kind: e.kind || "family"
+  }));
+}
+
+// ----- Familiekalender (kun familiens egne aftaler) -----
 function renderCalendar(events) {
+  if (events) lastEvents = events;
   const list = $("calList"); list.innerHTML = "";
   const now = new Date(), today = startOfDay(now);
-  const evs = events.map(e => ({ title: e.title, allDay: e.allDay, start: new Date(e.start), end: new Date(e.end) }));
+  const evs = parseEvents().filter(e => e.kind !== "school");
 
   for (let i = 0; i < CONFIG.calendarDays; i++) {
     const ds = addDays(today, i), de = addDays(today, i + 1);
@@ -584,16 +687,118 @@ function renderCalendar(events) {
     if (!todays.length && i > 0) continue;
 
     const box = el("div", "day" + (i === 0 ? " today" : ""));
-    box.appendChild(el("h3", null, i === 0 ? "I dag" : i === 1 ? "I morgen" : cap(DAYS[ds.getDay()]) + " " + ds.getDate() + ". " + MONTHS[ds.getMonth()]));
+    box.appendChild(el("h3", null, dayLabel(ds, i)));
     if (!todays.length) box.appendChild(el("div", "empty", "Intet i kalenderen"));
     for (const e of todays) {
       const row = el("div", "ev" + (!e.allDay && e.end < now ? " past" : ""));
-      const time = el("time", null, e.allDay ? "Hele dagen" : e.start < ds ? "Fortsat" : hhmm(e.start));
-      row.appendChild(time);
+      row.appendChild(el("time", null, e.allDay ? "Hele dagen" : e.start < ds ? "Fortsat" : hhmm(e.start)));
       row.appendChild(el("div", "t", e.title));
       box.appendChild(row);
     }
     list.appendChild(box);
+  }
+  renderSchool();
+}
+
+// ----- Skema fra Aula -----
+// En skematime er en tidsbestemt Aula-begivenhed, der starter før kl. 17.
+const isLesson = e => e.kind === "school" && !e.allDay && e.start.getHours() < 17;
+let schoolDay = null; // valgt dag (0 = i dag), null = automatisk
+
+function renderSchool() {
+  const box = $("kids"), seg = $("schoolDays");
+  box.innerHTML = ""; seg.innerHTML = "";
+  const now = new Date(), today = startOfDay(now);
+  const evs = parseEvents().filter(e => e.kind === "school");
+  const kids = [...new Set(evs.map(e => e.who))].sort();
+  kids.forEach(colorFor);
+
+  if (!getCalUrl()) { box.appendChild(el("div", "empty", "Forbind kalenderen for at se skemaet.")); return; }
+  if (!kids.length) { box.appendChild(el("div", "empty", "Intet skema de næste dage.")); return; }
+
+  // Dage med skole i den hentede periode
+  const days = [];
+  for (let i = 0; i < CONFIG.calendarDays; i++) {
+    const ds = addDays(today, i), de = addDays(today, i + 1);
+    const lessons = evs.filter(e => isLesson(e) && e.start < de && e.end > ds);
+    if (lessons.length) days.push({ i, ds, de, done: lessons.every(l => l.end < now) });
+  }
+  if (!days.length) { box.appendChild(el("div", "empty", "Ingen skoledage de næste dage.")); return; }
+
+  // Automatisk: i dag, indtil skoledagen er slut. Derefter næste skoledag.
+  const auto = (days.find(d => !(d.i === 0 && d.done)) || days[0]).i;
+  const sel = days.find(d => d.i === schoolDay) ? schoolDay : auto;
+
+  days.slice(0, 5).forEach(d => {
+    const label = d.i === 0 ? "I dag" : d.i === 1 ? "I morgen" : cap(DAYS[d.ds.getDay()]);
+    const b = el("button", d.i === sel ? "on" : "", label); b.type = "button";
+    b.onclick = () => { schoolDay = d.i; renderSchool(); };
+    seg.appendChild(b);
+  });
+
+  const day = days.find(d => d.i === sel);
+  box.style.gridTemplateColumns = "repeat(" + kids.length + ", 1fr)";
+  kids.forEach(who => {
+    const mine = evs.filter(e => e.who === who && e.start < day.de && e.end > day.ds);
+    const lessons = mine.filter(isLesson).sort((a, b) => a.start - b.start);
+    const extras = mine.filter(e => !isLesson(e));
+
+    const card = el("div", "kid");
+    const head = el("div", "kidhead");
+    head.appendChild(dot(who));
+    head.appendChild(el("b", null, who));
+    if (lessons.length) {
+      const last = new Date(Math.max(...lessons.map(l => l.end)));
+      head.appendChild(el("span", "span", hhmm(lessons[0].start) + "–" + hhmm(last)));
+    }
+    card.appendChild(head);
+
+    if (!lessons.length) card.appendChild(el("div", "empty", "Fri"));
+    lessons.forEach(l => {
+      const cancelled = /aflys/i.test(l.title), changed = /ændr|vikar/i.test(l.title);
+      const r = el("div", "lesson" + (l.end < now ? " past" : "") + (cancelled ? " cancelled" : "") + (changed ? " changed" : ""));
+      r.appendChild(el("time", null, hhmm(l.start)));
+      r.appendChild(el("div", "t", l.title));
+      card.appendChild(r);
+    });
+    extras.forEach(e => {
+      const r = el("div", "extra");
+      r.appendChild(el("time", null, e.allDay ? "Hele dagen" : hhmm(e.start)));
+      r.appendChild(el("div", "t", e.title));
+      card.appendChild(r);
+    });
+    box.appendChild(card);
+  });
+}
+
+// ----- SFO-aktiviteter (indtastet i CONFIG.sfo) -----
+function renderSFO() {
+  const S = CONFIG.sfo, grid = $("sfoWeek");
+  grid.innerHTML = "";
+  const now = new Date();
+  let todayIdx = now.getDay(); // 0 = søndag
+  if (todayIdx === 0 || todayIdx === 6) todayIdx = 1; // weekend: fremhæv mandag
+
+  const note = $("sfoNote");
+  if (S.opdaterSenest && isoDate(now) > S.opdaterSenest) {
+    note.textContent = "Tid til at opdatere aktiviteterne"; note.className = "err";
+  } else { note.textContent = S.periode || ""; note.className = ""; }
+
+  for (let d = 1; d <= 5; d++) {
+    const col = el("div", "sfoday" + (d === todayIdx ? " today" : ""));
+    col.appendChild(el("h3", null, cap(DAYS[d])));
+    const items = S.dage[d] || [];
+    if (!items.length) col.appendChild(el("div", "empty", "Ingen aktiviteter"));
+    items.forEach(a => {
+      const r = el("div", "act");
+      r.appendChild(el("span", "ico", a.ikon || "•"));
+      const txt = el("div", "txt");
+      txt.appendChild(el("div", "n", a.navn));
+      txt.appendChild(el("div", "tm", a.tid));
+      r.appendChild(txt);
+      col.appendChild(r);
+    });
+    grid.appendChild(col);
   }
 }
 
@@ -643,6 +848,7 @@ document.addEventListener("visibilitychange", () => {
 })();
 
 tick(); setInterval(tick, 10000);
+renderSFO();
 refreshAll();
 setInterval(loaders.weather, CONFIG.refreshMinutes.weather * 60000);
 setInterval(loaders.prices, CONFIG.refreshMinutes.prices * 60000);
