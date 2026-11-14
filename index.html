@@ -273,26 +273,52 @@ function hasTariffs() {
   return P.leverandoerTillaeg || P.elafgift || P.energinet || n.lav || n.hoej || n.spids;
 }
 
-async function loadPrices() {
-  const today = new Date();
+// Kilde 1: Energinets Energi Data Service. Returnerer [{h, kr}] med spotpris i kr/kWh ekskl. moms.
+async function spotFromEnerginet(today) {
   const filter = encodeURIComponent(JSON.stringify({ PriceArea: [CONFIG.priceArea] }));
-  // Bred tidsramme, så tidszoner ikke driller. Vi filtrerer på dansk dato bagefter.
   const url = "https://api.energidataservice.dk/dataset/DayAheadPrices" +
     "?start=" + isoDate(addDays(today, -1)) + "T00:00&end=" + isoDate(addDays(today, 2)) + "T00:00" +
-    "&filter=" + filter + "&sort=TimeDK%20asc&limit=1000";
+    "&filter=" + filter + "&limit=1000";
   const r = await fetch(url);
-  if (!r.ok) throw new Error("Elpris: HTTP " + r.status);
+  if (!r.ok) throw new Error("Energinet svarede " + r.status);
   const j = await r.json();
-
-  // Priserne kommer i kvarterer. Vi samler dem til timepriser (gennemsnit).
-  const key = isoDate(today);
-  const buckets = Array.from({ length: 24 }, () => []);
+  const key = isoDate(today), out = [];
   for (const rec of j.records || []) {
     if (!rec.TimeDK || !rec.TimeDK.startsWith(key)) continue;
     let dkk = rec.DayAheadPriceDKK;
     if (dkk == null && rec.DayAheadPriceEUR != null) dkk = rec.DayAheadPriceEUR * 7.46;
-    if (dkk != null) buckets[+rec.TimeDK.slice(11, 13)].push(dkk / 1000); // kr/MWh → kr/kWh
+    if (dkk != null) out.push({ h: +rec.TimeDK.slice(11, 13), kr: dkk / 1000 }); // kr/MWh → kr/kWh
   }
+  if (!out.length) throw new Error("Energinet havde ingen priser for i dag");
+  return out;
+}
+
+// Kilde 2 (reserve): elprisenligenu.dk, som henter de samme Nord Pool-priser.
+async function spotFromElprisen(today) {
+  const url = "https://www.elprisenligenu.dk/api/v1/prices/" + today.getFullYear() + "/" +
+    pad(today.getMonth() + 1) + "-" + pad(today.getDate()) + "_" + CONFIG.priceArea + ".json";
+  const r = await fetch(url);
+  if (!r.ok) throw new Error("Elprisen lige nu svarede " + r.status);
+  const j = await r.json();
+  return j.map(p => ({ h: +p.time_start.slice(11, 13), kr: p.DKK_per_kWh }));
+}
+
+async function loadPrices() {
+  const today = new Date();
+  let spot, fejl = [];
+  for (const kilde of [spotFromEnerginet, spotFromElprisen]) {
+    try { spot = await kilde(today); break; }
+    catch (e) { fejl.push(e.message); }
+  }
+  if (!spot) {
+    const e = new Error(fejl.join(" / "));
+    e.userMessage = "Fejl: " + fejl.join(" / ");
+    throw e;
+  }
+
+  // Priserne kommer i kvarterer. Vi samler dem til timepriser (gennemsnit).
+  const buckets = Array.from({ length: 24 }, () => []);
+  for (const p of spot) if (p.h >= 0 && p.h < 24) buckets[p.h].push(p.kr);
   const prices = buckets.map((a, h) => a.length ? priceForHour(h, a.reduce((x, y) => x + y, 0) / a.length) : null);
   renderPrices(prices);
 }
