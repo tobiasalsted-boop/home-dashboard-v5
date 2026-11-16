@@ -100,6 +100,12 @@ header { grid-column: 1 / -1; display: flex; justify-content: space-between; ali
 #meStatus { font-size: 14px; color: var(--muted); }
 #meStatus.err { color: var(--err); }
 
+/* Blund */
+#doze { position: fixed; inset: 0; z-index: 60; background: #000; display: none; align-items: center; justify-content: center; }
+#doze.on { display: flex; }
+#dClock { font-size: 120px; font-weight: 200; color: #fff; opacity: .12; font-variant-numeric: tabular-nums; }
+#camVideo { position: fixed; width: 1px; height: 1px; opacity: 0; pointer-events: none; left: -10px; top: -10px; }
+
 /* Billedramme */
 #frame { position: fixed; inset: 0; z-index: 50; background: #000; display: none; color: #fff; }
 #frame.on { display: block; }
@@ -146,8 +152,9 @@ header { grid-column: 1 / -1; display: flex; justify-content: space-between; ali
 .stats { display: flex; gap: 28px; }
 .stat .v { font-size: 32px; font-weight: 300; font-variant-numeric: tabular-nums; line-height: 1.1; }
 .stat .v span { font-size: 15px; color: var(--muted); margin-left: 4px; }
-.stat .l { font-size: 14px; color: var(--muted); }
+.stat .l { font-size: 14px; color: var(--muted); white-space: nowrap; }
 .stat.current .v { color: var(--lit); }
+.h2right { display: flex; align-items: center; gap: 12px; font-weight: 400; }
 .seg { display: flex; background: var(--chip); border-radius: 12px; padding: 3px; flex-shrink: 0; }
 .seg:empty { display: none; }
 .seg button { font: inherit; font-size: 15px; border: 0; background: transparent; color: var(--muted); padding: 7px 14px; border-radius: 9px; }
@@ -170,6 +177,9 @@ header { grid-column: 1 / -1; display: flex; justify-content: space-between; ali
 #chart .sellab { fill: var(--text); }
 #chart .selbox { fill: none; stroke: var(--text); stroke-width: 1.5; stroke-dasharray: 3 3; }
 #chart .win { stroke: var(--cheap); stroke-width: 4; stroke-linecap: round; }
+#chart .carwin { stroke: var(--lit); stroke-width: 4; stroke-linecap: round; }
+#chart .daysep { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 3 3; opacity: .7; }
+#chart .daylab { fill: var(--muted); font-size: 12px; font-weight: 600; font-family: inherit; }
 #chart .hit { fill: transparent; cursor: pointer; }
 .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--muted); margin-top: 8px; }
 .legend .sw { display: inline-block; width: 11px; height: 11px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
@@ -178,10 +188,14 @@ header { grid-column: 1 / -1; display: flex; justify-content: space-between; ali
 .legend .sw.lvl-dear { background: var(--dear); }
 .legend .sw.fixed { background: var(--fixed); }
 .legend .sw.band { background: var(--band); outline: 1px solid var(--line); }
+.legend .sw.carwin { height: 4px; width: 16px; border-radius: 2px; background: var(--lit); vertical-align: 2px; }
 .legend .sw.win { height: 4px; width: 16px; border-radius: 2px; background: var(--cheap); vertical-align: 2px; }
 .note { font-size: 14px; color: var(--muted); margin-top: 8px; min-height: 20px; }
 .note b { color: var(--cheap); font-weight: 600; }
 .note b.sel { color: var(--text); }
+.note b.car { color: var(--lit); }
+.note > div + div { margin-top: 3px; }
+.note .soon { font-size: 13px; }
 
 /* Skema */
 .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 8px; vertical-align: 1px; flex-shrink: 0; }
@@ -270,10 +284,9 @@ header { grid-column: 1 / -1; display: flex; justify-content: space-between; ali
   </section>
 
   <section class="panel" id="price">
-    <h2><span id="priceTitle">Elpris</span> <small id="priceStatus"></small></h2>
+    <h2><span id="priceTitle">Elpris</span> <span class="h2right"><small id="priceStatus"></small><span class="seg" id="priceDays"></span></span></h2>
     <div class="pricehead">
       <div class="stats" id="priceStats"></div>
-      <div class="seg" id="priceDays"></div>
     </div>
     <div id="chart"></div>
     <div class="legend" id="legend"></div>
@@ -300,6 +313,9 @@ header { grid-column: 1 / -1; display: flex; justify-content: space-between; ali
     <div class="sfoweek" id="sfoWeek"></div>
   </section>
 </div>
+
+<div id="doze" aria-hidden="true"><div id="dClock"></div></div>
+<video id="camVideo" playsinline muted autoplay></video>
 
 <div id="frame" aria-hidden="true">
   <div class="ph"></div><div class="ph"></div>
@@ -361,7 +377,8 @@ const CONFIG = {
       "spids","spids","spids","spids",                         // 17–21
       "hoej","hoej","hoej"                                     // 21–24
     ],
-    billigVindue: 3 // Antal timer i "billigste stræk"
+    billigVindue: 3, // Antal timer i "billigste stræk"
+    ladeVindue: 5    // Antal timer bilen skal lade. Sæt til 0 for at skjule.
   },
 
   // Madplan: åbnes, når man trykker "Rediger"
@@ -377,6 +394,11 @@ const CONFIG = {
       // { navn: "Lauras fødselsdag", dato: "03-14", ikon: "🎂" },
     ]
   },
+
+  // Blund: skærmen bliver næsten sort efter et antal minutter uden berøring og uden bevægelse.
+  // kamera: brug frontkameraet som bevægelsessensor. foelsomhed: hvor mange % af billedet der skal ændre sig
+  // (lavere tal = mere følsom). Sæt efterMinutter til 0 for at slå blund fra.
+  blund: { efterMinutter: 3, kamera: true, foelsomhed: 3 },
 
   // Billedramme: vises efter et stykke tid uden berøring, inden for tidsrummet. Tryk for at lukke.
   // Billederne kommer fra Drev-mappen i Apps Scriptet (PHOTO_FOLDER_ID).
@@ -569,7 +591,8 @@ function buildRows(list, date) {
   return buckets.map((a, h) => a.length ? priceParts(h, a.reduce((x, y) => x + y, 0) / a.length, date) : null);
 }
 
-let priceDays = [], selDay = 0, pinnedHour = null, pinTimer = null;
+
+let priceDays = [], selView = null, pinnedHour = null, pinTimer = null;
 
 async function loadPrices() {
   const today = new Date(), tomorrow = addDays(today, 1);
@@ -587,7 +610,6 @@ async function loadPrices() {
     { label: "I dag", rows: buildRows(map[isoDate(today)], today) },
     { label: "I morgen", rows: buildRows(map[isoDate(tomorrow)], tomorrow) }
   ];
-  if (!priceDays[selDay].rows) selDay = 0;
   renderPrices();
 }
 
@@ -601,81 +623,122 @@ function fmtAxis(v, step) {
   return (step >= 1 ? String(Math.round(v)) : v.toFixed(2).replace(".", ",")) + " kr";
 }
 
+// Bygger de timer, der skal vises: "frem" (fra nu og så langt priserne rækker), "idag" eller "imorgen"
+function buildSlots(view) {
+  const nowH = new Date().getHours(), out = [];
+  const add = (dayOff, h) => out.push({ dayOff, h, r: (priceDays[dayOff] && priceDays[dayOff].rows || [])[h] || null });
+  if (view === "idag") for (let h = 0; h < 24; h++) add(0, h);
+  else if (view === "imorgen") for (let h = 0; h < 24; h++) add(1, h);
+  else {
+    for (let h = nowH; h < 24; h++) add(0, h);
+    if (priceDays[1] && priceDays[1].rows) for (let h = 0; h < 24; h++) add(1, h);
+  }
+  return { slots: out, nowIdx: view === "idag" ? nowH : view === "frem" ? 0 : -1 };
+}
+
+function bestWindow(slots, n, from) {
+  let best = null;
+  for (let s = Math.max(0, from); s + n <= slots.length; s++) {
+    const slice = slots.slice(s, s + n);
+    if (slice.some(x => !x.r)) continue;
+    const sum = slice.reduce((a, x) => a + x.r.total, 0);
+    if (!best || sum < best.sum) best = { s, n, sum };
+  }
+  return best;
+}
+
+function rangeText(slots, w, view) {
+  const a = slots[w.s], b = slots[w.s + w.n - 1];
+  const t = "kl. " + pad(a.h) + "–" + pad(b.h + 1);
+  if (view !== "frem") return t;
+  if (a.dayOff === 1) return "i morgen " + t;
+  if (b.dayOff === 1) return t + " i nat";
+  return t;
+}
+const slotWhen = (x, view) => (view === "frem" && x.dayOff === 1 ? "i morgen " : "") + "kl. " + pad(x.h);
+
 function renderPrices() {
-  const day = priceDays[selDay];
-  if (!day) return;
-  const rows = day.rows || [];
-  const isToday = selDay === 0;
-  const nowH = isToday ? new Date().getHours() : -1;
-  const n = CONFIG.prices.billigVindue;
+  if (!priceDays.length) return;
+  const hasTomorrow = !!(priceDays[1] && priceDays[1].rows);
+  if (!selView || (selView === "imorgen" && !hasTomorrow)) selView = hasTomorrow ? "frem" : "idag";
+  const view = selView;
+  const { slots, nowIdx } = buildSlots(view);
+  const n = CONFIG.prices.billigVindue, nCar = CONFIG.prices.ladeVindue;
 
   $("priceTitle").textContent = hasTariffs() ? "Elpris" : "Spotpris inkl. moms";
 
-  // Vælger: I dag / I morgen
+  // Vælger
   const seg = $("priceDays"); seg.innerHTML = "";
-  if (priceDays[1] && priceDays[1].rows) {
-    priceDays.forEach((d, i) => {
-      const b = el("button", i === selDay ? "on" : "", d.label); b.type = "button";
-      b.onclick = e => { e.stopPropagation(); selDay = i; pinnedHour = null; renderPrices(); };
-      seg.appendChild(b);
-    });
-  }
+  const choices = hasTomorrow ? [["frem", "Fra nu"], ["idag", "I dag"], ["imorgen", "I morgen"]] : [];
+  choices.forEach(([v, label]) => {
+    const b = el("button", v === view ? "on" : "", label); b.type = "button";
+    b.onclick = e => { e.stopPropagation(); selView = v; pinnedHour = null; renderPrices(); };
+    seg.appendChild(b);
+  });
 
-  const valid = rows.filter(Boolean);
+  const valid = slots.filter(x => x.r);
   const stats = $("priceStats"), note = $("priceNote");
   stats.innerHTML = ""; note.innerHTML = "";
-  if (!valid.length) { $("chart").innerHTML = ""; note.textContent = "Dagens priser er ikke offentliggjort endnu."; return; }
+  if (!valid.length) { $("chart").innerHTML = ""; note.textContent = "Priserne er ikke offentliggjort endnu."; return; }
 
-  const min = valid.reduce((a, b) => b.total < a.total ? b : a);
-  const max = valid.reduce((a, b) => b.total > a.total ? b : a);
-  const avg = valid.reduce((s, r) => s + r.total, 0) / valid.length;
+  const min = valid.reduce((a, b) => b.r.total < a.r.total ? b : a);
+  const max = valid.reduce((a, b) => b.r.total > a.r.total ? b : a);
+  const avg = valid.reduce((s, x) => s + x.r.total, 0) / valid.length;
 
   const stat = (label, value, cls) => {
     const s = el("div", "stat" + (cls ? " " + cls : "")), v = el("div", "v", kr(value));
     v.appendChild(el("span", null, "kr"));
     s.appendChild(v); s.appendChild(el("div", "l", label)); stats.appendChild(s);
   };
-  if (isToday && rows[nowH]) stat("Lige nu", rows[nowH].total, "current");
+  if (nowIdx >= 0 && slots[nowIdx] && slots[nowIdx].r) stat("Lige nu", slots[nowIdx].r.total, "current");
   else stat("Gennemsnit", avg);
-  stat("Billigst kl. " + pad(min.h), min.total, "cheap");
-  stat("Dyrest kl. " + pad(max.h), max.total, "dear");
+  stat("Billigst " + slotWhen(min, view), min.r.total, "cheap");
+  stat("Dyrest " + slotWhen(max, view), max.r.total, "dear");
 
-  // Billigste sammenhængende stræk (resten af dagen, hvis det er i dag)
-  let best = null;
-  for (let s = Math.max(0, nowH); s + n <= 24; s++) {
-    const slice = rows.slice(s, s + n);
-    if (slice.some(r => !r)) continue;
-    const sum = slice.reduce((a, r) => a + r.total, 0);
-    if (!best || sum < best.sum) best = { s, sum };
-  }
+  const best = bestWindow(slots, n, Math.max(0, nowIdx));
+  const car = (view !== "idag" && nCar) ? bestWindow(slots, nCar, Math.max(0, nowIdx)) : null;
 
-  drawLegend(best, n);
+  drawLegend(best, n, car, nCar);
 
-  // Tekst under grafen: valgt time, ellers billigste stræk
-  if (pinnedHour != null && rows[pinnedHour]) {
-    const r = rows[pinnedHour];
-    note.appendChild(el("b", "sel", "Kl. " + pad(r.h) + "–" + pad((r.h + 1) % 24 || 24) + ": " + kr(r.total) + " kr/kWh"));
+  if (pinnedHour != null && slots[pinnedHour] && slots[pinnedHour].r) {
+    const x = slots[pinnedHour], r = x.r;
+    const when = (view === "frem" && x.dayOff === 1 ? "I morgen kl. " : "Kl. ") + pad(x.h) + "–" + pad(x.h + 1);
+    note.appendChild(el("b", "sel", when + ": " + kr(r.total) + " kr/kWh"));
     if (hasTariffs()) note.appendChild(document.createTextNode(", heraf strøm " + kr(r.spotM) + " kr og transport og afgifter " + kr(r.fixed) + " kr"));
-  } else if (best) {
-    note.appendChild(document.createTextNode("Billigste " + n + " timer " + (isToday ? "resten af dagen" : "i morgen") + ": "));
-    note.appendChild(el("b", null, "kl. " + pad(best.s) + "–" + pad(best.s + n)));
-    note.appendChild(document.createTextNode(", gns. " + kr(best.sum / n) + " kr/kWh. Tryk på en søjle for detaljer."));
+  } else {
+    if (best) {
+      const l = el("div");
+      l.appendChild(document.createTextNode("Billigste " + n + " timer: "));
+      l.appendChild(el("b", null, rangeText(slots, best, view)));
+      l.appendChild(document.createTextNode(", gns. " + kr(best.sum / n) + " kr/kWh"));
+      note.appendChild(l);
+    }
+    if (car) {
+      const l = el("div");
+      l.appendChild(document.createTextNode("🚗 Bedste " + nCar + " timer til at lade bilen: "));
+      l.appendChild(el("b", "car", rangeText(slots, car, view)));
+      l.appendChild(document.createTextNode(", gns. " + kr(car.sum / nCar) + " kr/kWh"));
+      note.appendChild(l);
+    }
+    if (view === "idag" && !hasTomorrow) note.appendChild(el("div", "soon", "Morgendagens priser kommer ved 13-tiden."));
   }
 
-  drawChart(rows, nowH, best, n, min.total, max.total);
+  drawChart(slots, nowIdx, best, car, min.r.total, max.r.total);
 }
 
-function drawChart(rows, nowH, best, n, minT, maxT) {
+function drawChart(slots, nowIdx, best, car, minT, maxT) {
   const box = $("chart"); box.innerHTML = "";
   const W = box.clientWidth || 600, H = box.clientHeight || 200;
-  const padL = 2, padR = 54, padT = 24, padB = 26;
+  const padL = 2, padR = 54, padT = 24, padB = 34;
   const pw = W - padL - padR, ph = H - padT - padB;
+  const N = slots.length;
   const lo = Math.min(0, minT);
   const step = niceStep((maxT - lo) / 4);
   const top = Math.ceil(maxT / step) * step || step;
   const bot = Math.floor(lo / step) * step;
   const y = v => padT + ph * (top - v) / (top - bot);
-  const bw = pw / 24;
+  const bw = pw / N;
+  const xOf = i => padL + i * bw;
   const NS = "http://www.w3.org/2000/svg";
   const svg = document.createElementNS(NS, "svg");
   svg.setAttribute("viewBox", "0 0 " + W + " " + H);
@@ -686,10 +749,13 @@ function drawChart(rows, nowH, best, n, minT, maxT) {
     parent.appendChild(e); return e;
   };
 
-  // Spidslast som svag baggrund, så det er tydeligt, hvorfor aftenen er dyr
+  // Spidslast som svag baggrund (kan forekomme to gange, når vi viser frem til i morgen)
   const per = CONFIG.prices.netPerioder;
-  const s0 = per.indexOf("spids"), s1 = per.lastIndexOf("spids");
-  if (s0 >= 0) add(svg, "rect", { x: padL + s0 * bw, y: padT, width: (s1 - s0 + 1) * bw, height: ph, class: "band" });
+  for (let i = 0; i < N; i++) {
+    if (per[slots[i].h] !== "spids" || (i > 0 && per[slots[i - 1].h] === "spids" && slots[i - 1].dayOff === slots[i].dayOff)) continue;
+    let j = i; while (j + 1 < N && per[slots[j + 1].h] === "spids" && slots[j + 1].dayOff === slots[i].dayOff) j++;
+    add(svg, "rect", { x: xOf(i), y: padT, width: (j - i + 1) * bw, height: ph, class: "band" });
+  }
 
   // Vandrette hjælpelinjer med kronebeløb til højre
   for (let v = bot; v <= top + 1e-9; v += step) {
@@ -698,56 +764,63 @@ function drawChart(rows, nowH, best, n, minT, maxT) {
     add(svg, "text", { x: padL + pw + 8, y: yy + 4, class: "ylab" }, fmtAxis(v, step));
   }
 
+  // Skillelinje ved midnat
+  const mid = slots.findIndex((x, i) => i > 0 && x.dayOff !== slots[i - 1].dayOff);
+  if (mid > 0) {
+    add(svg, "line", { x1: xOf(mid), x2: xOf(mid), y1: padT - 14, y2: padT + ph, class: "daysep" });
+    add(svg, "text", { x: xOf(mid) + 5, y: padT - 6, class: "daylab" }, "I morgen");
+  }
+
   const level = t => {
     const rel = (t - minT) / ((maxT - minT) || 1);
     return rel < 0.34 ? "cheap" : rel > 0.66 ? "dear" : "mid";
   };
 
-  rows.forEach((r, h) => {
+  slots.forEach((sl, i) => {
+    const r = sl.r;
     if (!r) return;
-    const x = padL + h * bw + 1.5, w = Math.max(2, bw - 3);
-    const g = add(svg, "g", { class: "hr" + (h < nowH ? " past" : "") });
+    const x = xOf(i) + Math.min(1.5, bw * 0.12), w = Math.max(2, bw - 2 * Math.min(1.5, bw * 0.12));
+    const g = add(svg, "g", { class: "hr" + (nowIdx > 0 && i < nowIdx ? " past" : "") });
     const base = Math.max(0, Math.min(r.fixed, r.total));
     if (base > 0) add(g, "rect", { x, y: y(base), width: w, height: y(0) - y(base), class: "fixed" });
     if (r.total > base) add(g, "rect", { x, y: y(r.total), width: w, height: y(base) - y(r.total), rx: 2, class: "lvl-" + level(r.total) });
     if (r.total < 0) add(g, "rect", { x, y: y(0), width: w, height: y(r.total) - y(0), class: "lvl-cheap" });
 
     const yTop = y(Math.max(r.total, 0)), yBot = y(Math.min(r.total, 0));
-    if (h === nowH) {
+    if (i === nowIdx) {
       add(svg, "rect", { x: x - 1.5, y: yTop - 1.5, width: w + 3, height: yBot - yTop + 3, rx: 3, class: "nowbox" });
       add(svg, "text", { x: x + w / 2, y: yTop - 8, class: "nowlab" }, kr(r.total));
     }
-    if (h === pinnedHour) {
+    if (i === pinnedHour) {
       add(svg, "rect", { x: x - 1.5, y: yTop - 1.5, width: w + 3, height: yBot - yTop + 3, rx: 3, class: "selbox" });
-      if (h !== nowH) add(svg, "text", { x: x + w / 2, y: yTop - 8, class: "sellab" }, kr(r.total));
+      if (i !== nowIdx) add(svg, "text", { x: x + w / 2, y: yTop - 8, class: "sellab" }, kr(r.total));
     }
 
-    // Usynligt trykfelt i fuld højde, så søjlen er nem at ramme
-    const hit = add(svg, "rect", { x: padL + h * bw, y: padT, width: bw, height: ph, class: "hit" });
+    const hit = add(svg, "rect", { x: xOf(i), y: padT, width: bw, height: ph, class: "hit" });
     hit.addEventListener("click", e => {
       e.stopPropagation();
-      pinnedHour = pinnedHour === h ? null : h;
+      pinnedHour = pinnedHour === i ? null : i;
       clearTimeout(pinTimer);
       pinTimer = setTimeout(() => { pinnedHour = null; renderPrices(); }, 10000);
       renderPrices();
     });
   });
 
-  // Billigste stræk som grøn streg under søjlerne
-  if (best) {
-    const yy = y(bot) + 5;
-    add(svg, "line", { x1: padL + best.s * bw + 2, x2: padL + (best.s + n) * bw - 2, y1: yy, y2: yy, class: "win" });
-  }
+  // Billigste stræk (grøn) og bedste opladning (gul) som streger under søjlerne
+  const under = (w, dy, cls) => add(svg, "line", { x1: xOf(w.s) + 2, x2: xOf(w.s + w.n) - 2, y1: y(bot) + dy, y2: y(bot) + dy, class: cls });
+  if (best) under(best, 5, "win");
+  if (car) under(car, 11, "carwin");
 
-  // Klokkeslæt hver 3. time
-  for (let h = 0; h < 24; h += 3) {
-    add(svg, "text", { x: padL + h * bw + bw / 2, y: H - 4, class: "xlab" }, pad(h));
-  }
+  // Klokkeslæt
+  const every = bw < 9 ? 6 : 3;
+  slots.forEach((sl, i) => {
+    if (sl.h % every === 0) add(svg, "text", { x: xOf(i) + bw / 2, y: H - 4, class: "xlab" }, pad(sl.h));
+  });
 
   box.appendChild(svg);
 }
 
-function drawLegend(best, n) {
+function drawLegend(best, n, car, nCar) {
   const lg = $("legend"); lg.innerHTML = "";
   const item = (cls, text) => {
     const s = el("span", "li"); s.appendChild(el("i", "sw " + cls)); s.appendChild(document.createTextNode(text)); lg.appendChild(s);
@@ -758,6 +831,7 @@ function drawLegend(best, n) {
   if (hasTariffs()) item("fixed", "Transport og afgifter");
   item("band", "Spidslast");
   if (best) item("win", "Billigste " + n + " timer");
+  if (car) item("carwin", "Lade bilen");
 }
 
 // ---------- Kalender (Google Apps Script) ----------
@@ -1143,7 +1217,7 @@ async function fetchPhoto(id) {
 }
 
 async function nextPhoto() {
-  if (!frameOn || !photoOrder.length) return;
+  if (!frameOn || !photoOrder.length || dozing) return;
   const id = photoOrder[photoPos % photoOrder.length]; photoPos++;
   try {
     const src = await fetchPhoto(id);
@@ -1175,14 +1249,75 @@ function hideFrame() {
   frameOn = false; clearTimeout(frameTimer);
   $("frame").classList.remove("on");
 }
-function checkFrame() {
-  const B = CONFIG.billedramme, now = new Date();
-  const idle = (Date.now() - lastTouch) / 60000 >= B.efterMinutter;
-  if (photoIds.length && idle && inFrameWindow(now)) showFrame();
-  else if (frameOn && !inFrameWindow(now)) hideFrame();
-  updateFrameInfo();
+// ---------- Blund og bevægelse ----------
+// Efter et stykke tid uden berøring og uden bevægelse foran kameraet går skærmen i blund (næsten sort).
+// Bevægelse eller et tryk vækker den igen. Kamerabilleder behandles kun her på iPad'en og gemmes ikke.
+let lastActivity = Date.now(), dozing = false, dozeStart = 0, camState = "off", prevFrame = null;
+
+function activity() {
+  lastActivity = Date.now();
+  if (dozing) wake();
 }
-["touchstart", "mousedown", "keydown"].forEach(ev => document.addEventListener(ev, () => { lastTouch = Date.now(); }, { passive: true }));
+function doze() {
+  if (dozing) return;
+  dozing = true; dozeStart = Date.now();
+  $("doze").classList.add("on"); updateDoze();
+}
+function wake() {
+  dozing = false;
+  $("doze").classList.remove("on");
+  if (Date.now() - dozeStart > 5 * 60000) refreshAll();
+  if (frameOn) nextPhoto();
+}
+function updateDoze() {
+  if (!dozing) return;
+  const d = new Date();
+  $("dClock").textContent = hhmm(d);
+}
+
+async function startCamera() {
+  if (!CONFIG.blund.kamera || camState !== "off" || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return;
+  camState = "starting";
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user", width: 160, height: 120 }, audio: false });
+    const v = $("camVideo");
+    v.srcObject = stream; await v.play();
+    camState = "on";
+    const W = 64, H = 48, c = document.createElement("canvas");
+    c.width = W; c.height = H;
+    const ctx = c.getContext("2d", { willReadFrequently: true });
+    setInterval(() => {
+      if (v.readyState < 2) return;
+      ctx.drawImage(v, 0, 0, W, H);
+      const d = ctx.getImageData(0, 0, W, H).data, g = new Uint8Array(W * H);
+      for (let i = 0, j = 0; i < d.length; i += 4, j++) g[j] = (d[i] * 3 + d[i + 1] * 4 + d[i + 2]) >> 3;
+      if (prevFrame) {
+        let changed = 0;
+        for (let j = 0; j < g.length; j++) if (Math.abs(g[j] - prevFrame[j]) > 28) changed++;
+        if (changed / g.length * 100 > CONFIG.blund.foelsomhed) activity();
+      }
+      prevFrame = g;
+    }, 500);
+  } catch (e) {
+    camState = "off"; // prøv igen ved næste tryk
+    console.warn("Kameraet er ikke tilgængeligt:", e);
+  }
+}
+
+function checkIdle() {
+  const now = new Date(), B = CONFIG.billedramme, Z = CONFIG.blund;
+  // Billedramme: efter et stykke tid uden berøring, inden for tidsrummet
+  const untouched = (Date.now() - lastTouch) / 60000 >= B.efterMinutter;
+  if (photoIds.length && untouched && inFrameWindow(now)) showFrame();
+  else if (frameOn && !inFrameWindow(now)) hideFrame();
+  // Blund: ingen berøring og ingen bevægelse
+  if (Z.efterMinutter && (Date.now() - lastActivity) / 60000 >= Z.efterMinutter) doze();
+  updateFrameInfo(); updateDoze();
+}
+
+["touchstart", "mousedown", "keydown"].forEach(ev => document.addEventListener(ev, () => {
+  lastTouch = Date.now(); activity(); startCamera();
+}, { passive: true }));
 
 // ---------- Opdatering ----------
 const loaders = {
@@ -1233,7 +1368,9 @@ document.addEventListener("visibilitychange", () => {
 applySeason();
 tick(); setInterval(tick, 10000);
 renderSFO();
-setInterval(checkFrame, 30000);
+setInterval(checkIdle, 15000);
+startCamera();
+$("doze").addEventListener("click", e => { e.stopPropagation(); });
 $("frame").addEventListener("click", e => { e.stopPropagation(); lastTouch = Date.now(); hideFrame(); });
 $("meSave").onclick = saveMeal;
 $("meCancel").onclick = closeMadEditor;
