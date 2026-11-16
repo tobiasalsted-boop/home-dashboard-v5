@@ -990,7 +990,6 @@ function renderCountdown() {
   box.appendChild(el("div", "cd-big", String(days)));
   const t = el("div", "cd-text");
   t.appendChild(el("div", "cd-main", (days === 1 ? "dag" : "dage") + " til " + next.navn + " " + next.ikon));
-  t.appendChild(el("div", "cd-sub", days === 1 ? "Kun én gang at sove!" : days + " gange at sove"));
   box.appendChild(t);
 }
 
