@@ -79,6 +79,26 @@ header { grid-column: 1 / -1; display: flex; justify-content: space-between; ali
 .mad .mm { font-size: 13px; color: var(--muted); margin-top: 2px; }
 .mad.tonight .md { color: var(--lit); font-weight: 600; }
 .mad.tonight .mr { font-size: 22px; font-weight: 500; white-space: normal; }
+.mad.tap { cursor: pointer; }
+.mad .mr.add { color: var(--muted); font-size: 15px; }
+.mad.tonight .mr.add { font-size: 17px; }
+
+#madEditor { position: fixed; inset: 0; z-index: 40; background: rgba(0,0,0,.45); display: none; align-items: flex-start; justify-content: center; padding: 60px 20px 20px; }
+#madEditor.show { display: flex; }
+#madEditor .box { background: var(--panel); border-radius: 24px; padding: 24px; width: 100%; max-width: 520px; box-shadow: 0 20px 60px rgba(0,0,0,.35); }
+#madEditor h1 { font-size: 24px; font-weight: 500; margin: 0 0 4px; }
+#madEditor p { color: var(--muted); font-size: 14px; margin: 0 0 14px; min-height: 18px; }
+#madEditor label { display: block; font-size: 14px; color: var(--muted); margin-bottom: 12px; }
+#madEditor input { display: block; width: 100%; margin-top: 6px; font: inherit; font-size: 18px; color: var(--text); background: var(--bg);
+  border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; -webkit-user-select: text; user-select: text; }
+#madEditor .row { display: flex; align-items: center; gap: 10px; margin-top: 6px; }
+#madEditor button { font: inherit; font-size: 17px; font-weight: 500; padding: 12px 20px; border-radius: 12px; border: 0; }
+#meSave { background: var(--lit); color: #2a1c00; }
+#meSave:disabled { opacity: .6; }
+@media (prefers-color-scheme: light) { #meSave { color: #fff; } }
+#meCancel { background: transparent; color: var(--muted); }
+#meStatus { font-size: 14px; color: var(--muted); }
+#meStatus.err { color: var(--err); }
 
 /* Billedramme */
 #frame { position: fixed; inset: 0; z-index: 50; background: #000; display: none; color: #fff; }
@@ -266,7 +286,7 @@ header { grid-column: 1 / -1; display: flex; justify-content: space-between; ali
   </section>
 
   <section class="panel" id="mad">
-    <h2>Madplan <button class="edit" id="madEdit" type="button">Rediger</button></h2>
+    <h2>Madplan <button class="edit" id="madEdit" type="button">Åbn regneark</button></h2>
     <div id="madList"></div>
   </section>
 
@@ -286,6 +306,21 @@ header { grid-column: 1 / -1; display: flex; justify-content: space-between; ali
   <div class="finfo">
     <div><div id="fClock"></div><div id="fDate"></div></div>
     <div class="countdown" id="fCountdown"></div>
+  </div>
+</div>
+
+<div id="madEditor">
+  <div class="box">
+    <h1 id="meTitle"></h1>
+    <p id="meHint"></p>
+    <label>Aftensmad<input id="meRet" type="text" autocomplete="off" placeholder="Fx lasagne"></label>
+    <label>Hvem laver mad<input id="meKok" type="text" autocomplete="off"></label>
+    <label>Note<input id="meNote" type="text" autocomplete="off" placeholder="Fx tag kød op af fryseren"></label>
+    <div class="row">
+      <button id="meSave" type="button">Gem</button>
+      <button id="meCancel" type="button">Annullér</button>
+      <span id="meStatus"></span>
+    </div>
   </div>
 </div>
 
@@ -1025,25 +1060,66 @@ function renderMadplan(rows) {
   if (!getCalUrl()) { box.appendChild(el("div", "empty", "Forbind kalenderen for at se madplanen.")); return; }
   if (!lastMadplan) return;
   const today = startOfDay(new Date());
-  const items = lastMadplan
-    .map(r => Object.assign({ d: madDate(r.dag, today) }, r))
-    .filter(r => r.d && r.d >= today && r.d < addDays(today, 7) && r.ret)
-    .sort((a, b) => a.d - b.d);
-  if (!items.length) {
-    box.appendChild(el("div", "empty", "Ingen madplan for de næste dage. Tryk på Rediger for at lave en."));
-    return;
-  }
-  items.forEach(r => {
-    const isToday = +r.d === +today;
-    const row = el("div", "mad" + (isToday ? " tonight" : ""));
-    row.appendChild(el("div", "md", isToday ? "I aften" : cap(DAYS[r.d.getDay()])));
+  const withDates = lastMadplan.map(r => Object.assign({ d: madDate(r.dag, today), dated: /\d/.test(r.dag) }, r));
+
+  for (let i = 0; i < 7; i++) {
+    const d = addDays(today, i);
+    // En række med dato vinder over en ugedagsrække
+    const match = withDates.filter(r => r.d && +r.d === +d).sort((a, b) => b.dated - a.dated)[0];
+    const row = el("div", "mad tap" + (i === 0 ? " tonight" : "") + (match && match.ret ? "" : " empty-day"));
+    row.appendChild(el("div", "md", i === 0 ? "I aften" : cap(DAYS[d.getDay()])));
     const t = el("div", "mt");
-    t.appendChild(el("div", "mr", r.ret));
-    const meta = [r.kok && "Kok: " + r.kok, r.note].filter(Boolean).join(". ");
-    if (meta) t.appendChild(el("div", "mm", meta));
+    if (match && match.ret) {
+      t.appendChild(el("div", "mr", match.ret));
+      const meta = [match.kok && "Kok: " + match.kok, match.note].filter(Boolean).join(". ");
+      if (meta) t.appendChild(el("div", "mm", meta));
+    } else {
+      t.appendChild(el("div", "mr add", "+ Tilføj aftensmad"));
+    }
     row.appendChild(t);
+    row.onclick = () => openMadEditor(d, match);
     box.appendChild(row);
-  });
+  }
+}
+
+// ----- Rediger en ret direkte på dashboardet -----
+let madEditing = null;
+function openMadEditor(d, match) {
+  madEditing = { dag: match ? match.dag : cap(DAYS[d.getDay()]) };
+  const today = startOfDay(new Date()), diff = Math.round((d - today) / 86400000);
+  $("meTitle").textContent = diff === 0 ? "I aften" : diff === 1 ? "I morgen, " + DAYS[d.getDay()] : cap(DAYS[d.getDay()]) + " " + d.getDate() + ". " + MONTHS[d.getMonth()];
+  $("meHint").textContent = match && !/\d/.test(match.dag) ? "Gælder alle " + DAYS[d.getDay()] + "e, indtil I skriver noget nyt." : "";
+  $("meRet").value = match ? match.ret : "";
+  $("meKok").value = match ? match.kok : "";
+  $("meNote").value = match ? match.note : "";
+  $("meStatus").textContent = ""; $("meStatus").className = "";
+  $("madEditor").className = "show";
+  setTimeout(() => $("meRet").focus(), 50);
+}
+function closeMadEditor() { $("madEditor").className = ""; madEditing = null; document.activeElement && document.activeElement.blur(); }
+
+async function saveMeal() {
+  if (!madEditing) return;
+  const base = getCalUrl();
+  let key = "";
+  try { key = new URL(base).searchParams.get("key") || ""; } catch (e) {}
+  $("meStatus").textContent = "Gemmer…"; $("meStatus").className = "";
+  $("meSave").disabled = true;
+  try {
+    const r = await fetch(base.split("?")[0], {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" }, // undgår CORS-forespørgsel
+      body: JSON.stringify({ key, action: "setMeal", dag: madEditing.dag,
+        ret: $("meRet").value.trim(), kok: $("meKok").value.trim(), note: $("meNote").value.trim() })
+    });
+    const j = await r.json();
+    if (!j.ok) throw new Error(j.error || "ukendt fejl");
+    renderMadplan(j.madplan);
+    closeMadEditor();
+  } catch (e) {
+    console.error(e);
+    $("meStatus").textContent = "Kunne ikke gemme: " + e.message; $("meStatus").className = "err";
+  } finally { $("meSave").disabled = false; }
 }
 
 // ---------- Billedramme ----------
@@ -1162,6 +1238,10 @@ tick(); setInterval(tick, 10000);
 renderSFO();
 setInterval(checkFrame, 30000);
 $("frame").addEventListener("click", e => { e.stopPropagation(); lastTouch = Date.now(); hideFrame(); });
+$("meSave").onclick = saveMeal;
+$("meCancel").onclick = closeMadEditor;
+$("madEditor").addEventListener("click", e => { if (e.target.id === "madEditor") closeMadEditor(); });
+["meRet", "meKok", "meNote"].forEach(id => $(id).addEventListener("keydown", e => { if (e.key === "Enter") saveMeal(); }));
 $("madEdit").onclick = e => { e.stopPropagation(); window.open(CONFIG.madplanUrl, "_blank"); };
 refreshAll();
 setInterval(loaders.weather, CONFIG.refreshMinutes.weather * 60000);
