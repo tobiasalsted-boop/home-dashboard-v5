@@ -1101,19 +1101,17 @@ function closeMadEditor() { $("madEditor").className = ""; madEditing = null; do
 async function saveMeal() {
   if (!madEditing) return;
   const base = getCalUrl();
-  let key = "";
-  try { key = new URL(base).searchParams.get("key") || ""; } catch (e) {}
+  const params = new URLSearchParams({
+    action: "setMeal", dag: madEditing.dag,
+    ret: $("meRet").value.trim(), kok: $("meKok").value.trim(), note: $("meNote").value.trim()
+  });
   $("meStatus").textContent = "Gemmer…"; $("meStatus").className = "";
   $("meSave").disabled = true;
   try {
-    const r = await fetch(base.split("?")[0], {
-      method: "POST",
-      headers: { "Content-Type": "text/plain;charset=utf-8" }, // undgår CORS-forespørgsel
-      body: JSON.stringify({ key, action: "setMeal", dag: madEditing.dag,
-        ret: $("meRet").value.trim(), kok: $("meKok").value.trim(), note: $("meNote").value.trim() })
-    });
+    // Samme slags forespørgsel som når kalenderen hentes, så den virker de samme steder
+    const r = await fetch(base + (base.indexOf("?") >= 0 ? "&" : "?") + params.toString());
     const j = await r.json();
-    if (!j.ok) throw new Error(j.error || "ukendt fejl");
+    if (!j.ok) throw new Error(j.error === "mangler dag" ? "mangler dag" : (j.error || "Apps Scriptet kender ikke gemme-funktionen endnu. Lav en ny version under Deploy."));
     renderMadplan(j.madplan);
     closeMadEditor();
   } catch (e) {
