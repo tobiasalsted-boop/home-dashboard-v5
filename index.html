@@ -28,21 +28,80 @@ html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
 body { padding: env(safe-area-inset-top, 0) env(safe-area-inset-right, 0) env(safe-area-inset-bottom, 0) env(safe-area-inset-left, 0); }
 
 .app { min-height: 100%; display: grid; gap: 16px; padding: 22px 28px 26px;
-  grid-template-columns: 1fr 1.3fr; grid-template-rows: auto minmax(400px, auto) auto auto auto; }
-header { grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: flex-end; }
-#clock { font-size: 96px; font-weight: 200; line-height: .9; letter-spacing: -3px; font-variant-numeric: tabular-nums; }
-#date { font-size: 21px; color: var(--muted); margin-top: 10px; }
-.now { display: flex; align-items: center; gap: 16px; text-align: right; }
-.now .icon { font-size: 60px; line-height: 1; }
-.now .temp { font-size: 60px; font-weight: 200; line-height: 1; }
-.now .desc { color: var(--muted); font-size: 17px; margin-top: 4px; }
+  grid-template-columns: 1fr 1.3fr; grid-template-rows: auto minmax(400px, auto) auto auto auto;
+  position: relative; z-index: 1; }
+header { grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: center; gap: 24px; min-height: 104px; }
+.headright { display: flex; align-items: center; gap: 28px; }
+.clockbox { text-align: right; padding-left: 28px; border-left: 1px solid var(--line); }
+#clock { font-size: 44px; font-weight: 300; line-height: 1; font-variant-numeric: tabular-nums; }
+#date { font-size: 16px; color: var(--muted); margin-top: 6px; }
+.now { display: flex; align-items: center; gap: 12px; text-align: right; }
+.now .icon { font-size: 44px; line-height: 1; }
+.now .temp { font-size: 44px; font-weight: 300; line-height: 1; }
+.now .desc { color: var(--muted); font-size: 15px; margin-top: 4px; }
+
+/* Nedtælling */
+.countdown { display: flex; align-items: center; gap: 18px; min-width: 0; }
+.cd-big { font-size: 96px; font-weight: 200; line-height: .9; letter-spacing: -3px; color: var(--lit); font-variant-numeric: tabular-nums; }
+.cd-main { font-size: 28px; font-weight: 500; line-height: 1.15; }
+.cd-sub { font-size: 17px; color: var(--muted); margin-top: 4px; }
+
+/* Sæsontema: små ting, der daler bag felterne */
+#season { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 0; }
+#season span { position: absolute; top: -40px; color: var(--text); opacity: .35; animation: fall linear infinite; will-change: transform; }
+#season span.up { top: auto; bottom: -20px; color: var(--lit); opacity: .6; animation-name: rise; }
+@keyframes fall { to { transform: translate3d(var(--dx), 112vh, 0) rotate(var(--rot)); } }
+@keyframes rise { to { transform: translate3d(var(--dx), -60vh, 0); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { #season { display: none; } }
+:root[data-season="jul"] { --lit: #ffcf6e; --bg: #18282c; --panel: #213438; --line: #2f474c; --chip: #2f474c; }
+:root[data-season="halloween"] { --lit: #ff9a3c; --bg: #211b2b; --panel: #2c243a; --line: #3d3350; --chip: #3d3350; }
+:root[data-season="nytaar"] { --lit: #e9d79a; }
+:root[data-season="fastelavn"] { --lit: #ff7eb6; }
+:root[data-season="paaske"] { --lit: #f2d24b; }
+:root[data-season="sankthans"] { --lit: #ff8a4c; }
+@media (prefers-color-scheme: light) {
+  :root[data-season="jul"] { --lit: #b8332e; --bg: #e3ece8; --chip: #e3ece8; --line: #d3dfda; --panel: #ffffff; }
+  :root[data-season="halloween"] { --lit: #c85a06; --bg: #ebe6f0; --chip: #ebe6f0; --line: #ddd5e6; --panel: #ffffff; }
+  :root[data-season="nytaar"] { --lit: #8a6d1a; }
+  :root[data-season="fastelavn"] { --lit: #c2185b; }
+  :root[data-season="paaske"] { --lit: #a07800; }
+  :root[data-season="sankthans"] { --lit: #c4501a; }
+  #season span { color: var(--muted); }
+}
+
+/* Madplan */
+.edit { font: inherit; font-size: 14px; font-weight: 500; border: 0; border-radius: 10px; padding: 6px 12px; background: var(--chip); color: var(--text); }
+.mad { display: flex; gap: 14px; padding: 7px 0; border-top: 1px solid var(--line); align-items: baseline; }
+#madList .mad:first-child { border-top: 0; }
+.mad .md { flex: 0 0 72px; color: var(--muted); font-size: 15px; }
+.mad .mt { flex: 1; min-width: 0; }
+.mad .mr { font-size: 17px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mad .mm { font-size: 13px; color: var(--muted); margin-top: 2px; }
+.mad.tonight .md { color: var(--lit); font-weight: 600; }
+.mad.tonight .mr { font-size: 22px; font-weight: 500; white-space: normal; }
+
+/* Billedramme */
+#frame { position: fixed; inset: 0; z-index: 50; background: #000; display: none; color: #fff; }
+#frame.on { display: block; }
+#frame .ph { position: absolute; inset: 0; background: center / cover no-repeat; opacity: 0; transition: opacity 2s ease; }
+#frame .ph.show { opacity: 1; }
+@media (prefers-reduced-motion: reduce) { #frame .ph { transition: none; } }
+#frame .finfo { position: absolute; left: 0; right: 0; bottom: 0; display: flex; justify-content: space-between; align-items: flex-end;
+  padding: 80px 40px calc(32px + env(safe-area-inset-bottom, 0px)); background: linear-gradient(transparent, rgba(0,0,0,.55)); text-shadow: 0 1px 8px rgba(0,0,0,.5); }
+#fClock { font-size: 72px; font-weight: 200; line-height: 1; font-variant-numeric: tabular-nums; }
+#fDate { font-size: 20px; opacity: .85; margin-top: 6px; }
+#frame .countdown { color: #fff; }
+#frame .cd-big { font-size: 64px; color: #fff; }
+#frame .cd-main { font-size: 22px; }
+#frame .cd-sub { color: rgba(255,255,255,.8); font-size: 15px; }
 
 .panel { background: var(--panel); border-radius: 24px; padding: 18px 22px; min-height: 0; overflow: hidden; display: flex; flex-direction: column; }
 .panel h2 { font-size: 18px; font-weight: 600; margin: 0 0 12px; display: flex; justify-content: space-between; align-items: baseline; }
 .panel h2 small { font-size: 13px; font-weight: 400; color: var(--muted); }
 .panel h2 small.err { color: var(--err); }
 
-#cal { grid-column: 1; grid-row: 2 / 4; }
+#cal { grid-column: 1; grid-row: 2; }
+#mad { grid-column: 1; grid-row: 3; }
 #price { grid-column: 2; grid-row: 2; }
 #week { grid-column: 2; grid-row: 3; }
 #school { grid-column: 1 / -1; grid-row: 4; }
@@ -55,7 +114,8 @@ header { grid-column: 1 / -1; display: flex; justify-content: space-between; ali
 .day h3 { font-size: 15px; font-weight: 600; color: var(--muted); margin: 0 0 4px; }
 .day.today h3 { color: var(--lit); }
 .ev { display: flex; gap: 14px; padding: 8px 0; border-top: 1px solid var(--line); font-size: 18px; }
-.day h3 + .ev, .day h3 + .ev time { flex: 0 0 84px; color: var(--muted); font-variant-numeric: tabular-nums; font-size: 16px; padding-top: 1px; }
+.day h3 + .ev { border-top: 0; }
+.ev time { flex: 0 0 84px; color: var(--muted); font-variant-numeric: tabular-nums; font-size: 16px; padding-top: 1px; }
 .ev .t { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ev.past { opacity: .4; }
 .empty { color: var(--muted); font-size: 16px; padding: 6px 0; }
@@ -132,7 +192,11 @@ header { grid-column: 1 / -1; display: flex; justify-content: space-between; ali
 .act .tm { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; margin-top: 1px; }
 
 /* Uge */
-.weekgrid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; }
+.weekgrid { display: grid; grid-auto-flow: column; grid-auto-columns: calc((100% - 16px) / 3); gap: 8px; text-align: center;
+  overflow-x: auto; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; scrollbar-width: none;
+  -webkit-mask-image: linear-gradient(90deg, #000 88%, transparent); mask-image: linear-gradient(90deg, #000 88%, transparent); }
+.weekgrid::-webkit-scrollbar { display: none; }
+.wd { scroll-snap-align: start; padding: 2px 0; }
 .wd .n { font-size: 15px; color: var(--muted); }
 .wd.today .n { color: var(--lit); font-weight: 600; }
 .wd .i { font-size: 30px; margin: 6px 0 4px; }
@@ -145,8 +209,10 @@ header { grid-column: 1 / -1; display: flex; justify-content: space-between; ali
   #price { grid-column: 1; grid-row: 2; }
   #week { grid-column: 1; grid-row: 3; }
   #cal { grid-column: 1; grid-row: 4; height: 420px; }
-  #school { grid-row: 5; }
-  #sfo { grid-row: 6; }
+  #mad { grid-column: 1; grid-row: 5; }
+  #school { grid-row: 6; }
+  #sfo { grid-row: 7; }
+  header { flex-wrap: wrap; }
   #chart { min-height: 200px; }
 }
 
@@ -165,13 +231,17 @@ header { grid-column: 1 / -1; display: flex; justify-content: space-between; ali
 </style>
 </head>
 <body>
+<div id="season" aria-hidden="true"></div>
 <div class="app">
   <header>
-    <div>
-      <div id="clock">--:--</div>
-      <div id="date"></div>
+    <div class="countdown" id="countdown"></div>
+    <div class="headright">
+      <div class="now" id="now"></div>
+      <div class="clockbox">
+        <div id="clock">--:--</div>
+        <div id="date"></div>
+      </div>
     </div>
-    <div class="now" id="now"></div>
   </header>
 
   <section class="panel" id="cal">
@@ -195,6 +265,11 @@ header { grid-column: 1 / -1; display: flex; justify-content: space-between; ali
     <div class="weekgrid" id="weekGrid"></div>
   </section>
 
+  <section class="panel" id="mad">
+    <h2>Madplan <button class="edit" id="madEdit" type="button">Rediger</button></h2>
+    <div id="madList"></div>
+  </section>
+
   <section class="panel" id="school">
     <h2>Skema <div class="seg" id="schoolDays"></div></h2>
     <div class="kids" id="kids"></div>
@@ -204,6 +279,14 @@ header { grid-column: 1 / -1; display: flex; justify-content: space-between; ali
     <h2>SFO-aktiviteter <small id="sfoNote"></small></h2>
     <div class="sfoweek" id="sfoWeek"></div>
   </section>
+</div>
+
+<div id="frame" aria-hidden="true">
+  <div class="ph"></div><div class="ph"></div>
+  <div class="finfo">
+    <div><div id="fClock"></div><div id="fDate"></div></div>
+    <div class="countdown" id="fCountdown"></div>
+  </div>
 </div>
 
 <div id="setup">
@@ -245,6 +328,24 @@ const CONFIG = {
     ],
     billigVindue: 3 // Antal timer i "billigste stræk"
   },
+
+  // Madplan: åbnes, når man trykker "Rediger"
+  madplanUrl: "https://docs.google.com/spreadsheets/d/1_Be_UmFOefvBcrcwtrtQk2z6oU7tQBuv0D8kMJEOefo/edit",
+
+  // Tema: "auto" skifter selv (jul fra 15. november, halloween 14 dage før osv.).
+  // Eller tving et bestemt: "jul", "nytaar", "fastelavn", "paaske", "sankthans", "halloween", "ingen"
+  tema: "auto",
+
+  // Nedtælling i toppen viser den nærmeste højtid. Tilføj egne datoer (MM-DD), fx fødselsdage:
+  nedtaelling: {
+    ekstra: [
+      // { navn: "Lauras fødselsdag", dato: "03-14", ikon: "🎂" },
+    ]
+  },
+
+  // Billedramme: vises efter et stykke tid uden berøring, inden for tidsrummet. Tryk for at lukke.
+  // Billederne kommer fra Drev-mappen i Apps Scriptet (PHOTO_FOLDER_ID).
+  billedramme: { efterMinutter: 10, fra: "19:00", til: "07:00", skiftSekunder: 20 },
 
   // SFO-aktiviteter pr. ugedag (1 = mandag … 5 = fredag).
   // Opdatér listen, når en ny periode starter. Efter "opdaterSenest" viser feltet en påmindelse.
@@ -320,6 +421,7 @@ function tick() {
   const d = new Date();
   $("clock").textContent = hhmm(d);
   $("date").textContent = cap(DAYS[d.getDay()]) + " " + d.getDate() + ". " + MONTHS[d.getMonth()];
+  renderCountdown();
 }
 
 // ---------- Vejr (Open-Meteo) ----------
@@ -638,6 +740,7 @@ function renderCalNotConnected() {
   list.appendChild(b);
   setStatus("calStatus", "");
   renderSchool();
+  renderMadplan();
 }
 
 async function loadCalendar() {
@@ -653,6 +756,8 @@ async function loadCalendar() {
     throw e;
   }
   renderCalendar(j.events || []);
+  renderMadplan(j.madplan || []);
+  setPhotos(j.photos || []);
 }
 
 // Farver pr. barn (i alfabetisk rækkefølge)
@@ -802,6 +907,210 @@ function renderSFO() {
   }
 }
 
+// ---------- Nedtælling og sæsontemaer ----------
+// Påskedag (gregoriansk kalender)
+function easter(y) {
+  const a = y % 19, b = Math.floor(y / 100), c = y % 100, d = Math.floor(b / 4), e = b % 4;
+  const f = Math.floor((b + 8) / 25), g = Math.floor((b - f + 1) / 3), h = (19 * a + b - d - g + 15) % 30;
+  const i = Math.floor(c / 4), k = c % 4, l = (32 + 2 * e + 2 * i - h - k) % 7, m = Math.floor((a + 11 * h + 22 * l) / 451);
+  const month = Math.floor((h + l - 7 * m + 114) / 31), day = ((h + l - 7 * m + 114) % 31) + 1;
+  return new Date(y, month - 1, day);
+}
+
+function festDates(y) {
+  const E = easter(y), md = (m, d) => new Date(y, m - 1, d);
+  const list = [
+    { navn: "juleaften", dato: md(12, 24), ikon: "🎄" },
+    { navn: "nytårsaften", dato: md(12, 31), ikon: "🎆" },
+    { navn: "fastelavn", dato: addDays(E, -49), ikon: "🎭" },
+    { navn: "påske", dato: E, ikon: "🐣" },
+    { navn: "sankthans", dato: md(6, 23), ikon: "🔥" },
+    { navn: "halloween", dato: md(10, 31), ikon: "🎃" }
+  ];
+  (CONFIG.nedtaelling.ekstra || []).forEach(x => {
+    const [m, d] = x.dato.split("-").map(Number);
+    list.push({ navn: x.navn, dato: md(m, d), ikon: x.ikon || "🎉" });
+  });
+  return list;
+}
+
+function nextCountdown(now) {
+  const today = startOfDay(now);
+  const all = festDates(now.getFullYear()).concat(festDates(now.getFullYear() + 1));
+  return all.filter(x => x.dato >= today).sort((a, b) => a.dato - b.dato)[0];
+}
+
+function renderCountdown() {
+  const now = new Date(), next = nextCountdown(now);
+  const box = $("countdown"); box.innerHTML = "";
+  if (!next) return;
+  const days = Math.round((next.dato - startOfDay(now)) / 86400000);
+  if (days === 0) {
+    box.appendChild(el("div", "cd-big", next.ikon));
+    const t = el("div", "cd-text");
+    t.appendChild(el("div", "cd-main", "I dag er det " + next.navn + "!"));
+    box.appendChild(t);
+    return;
+  }
+  box.appendChild(el("div", "cd-big", String(days)));
+  const t = el("div", "cd-text");
+  t.appendChild(el("div", "cd-main", (days === 1 ? "dag" : "dage") + " til " + next.navn + " " + next.ikon));
+  t.appendChild(el("div", "cd-sub", days === 1 ? "Kun én gang at sove!" : days + " gange at sove"));
+  box.appendChild(t);
+}
+
+const SEASONS = {
+  jul:       { ting: ["❄", "❅", "❆"], retning: "fald", antal: 26 },
+  nytaar:    { ting: ["✦", "✧", "·"], retning: "fald", antal: 22 },
+  fastelavn: { ting: ["●", "■", "▲"], retning: "fald", antal: 26, farver: true },
+  paaske:    { ting: ["🌼", "🐣", "🌷"], retning: "fald", antal: 12 },
+  sankthans: { ting: ["•", "∙"], retning: "op", antal: 24 },
+  halloween: { ting: ["🦇", "🍂", "🦇"], retning: "fald", antal: 12 }
+};
+
+function activeSeason(d) {
+  if (CONFIG.tema && CONFIG.tema !== "auto") return CONFIG.tema === "ingen" ? null : CONFIG.tema;
+  const y = d.getFullYear(), day = startOfDay(d), md = (m, dd) => new Date(y, m - 1, dd);
+  const between = (a, b) => day >= a && day <= b;
+  const E = easter(y), fast = addDays(E, -49);
+  if (between(md(11, 15), md(12, 26))) return "jul";
+  if (between(md(12, 27), md(12, 31)) || between(md(1, 1), md(1, 1))) return "nytaar";
+  if (between(addDays(fast, -7), fast)) return "fastelavn";
+  if (between(addDays(E, -7), addDays(E, 1))) return "paaske";
+  if (between(md(6, 20), md(6, 23))) return "sankthans";
+  if (between(md(10, 17), md(10, 31))) return "halloween";
+  return null;
+}
+
+function applySeason() {
+  const name = activeSeason(new Date());
+  const root = document.documentElement, box = $("season");
+  box.innerHTML = "";
+  if (!name || !SEASONS[name]) { delete root.dataset.season; return; }
+  root.dataset.season = name;
+  const S = SEASONS[name], colors = ["#ff6b8b", "#ffd166", "#6bd3ff", "#9b8cff", "#7be0a5"];
+  for (let i = 0; i < S.antal; i++) {
+    const sp = el("span", S.retning === "op" ? "up" : "", S.ting[i % S.ting.length]);
+    sp.style.left = (Math.random() * 100) + "vw";
+    sp.style.fontSize = (10 + Math.random() * 16) + "px";
+    sp.style.animationDuration = (14 + Math.random() * 18) + "s";
+    sp.style.animationDelay = (-Math.random() * 30) + "s";
+    sp.style.setProperty("--dx", (Math.random() * 120 - 60) + "px");
+    sp.style.setProperty("--rot", (Math.random() * 360 - 180) + "deg");
+    if (S.farver) sp.style.color = colors[i % colors.length];
+    box.appendChild(sp);
+  }
+}
+
+// ---------- Madplan ----------
+const WEEKDAY_PREFIX = ["søn", "man", "tir", "ons", "tor", "fre", "lør"];
+let lastMadplan = null;
+
+// Finder datoen for en række: ugedagsnavn ("Mandag") eller dato ("16.11", "16/11-2026")
+function madDate(dag, today) {
+  const s = String(dag || "").trim().toLowerCase();
+  const wi = WEEKDAY_PREFIX.findIndex(p => s.startsWith(p));
+  if (wi >= 0) return addDays(today, (wi - today.getDay() + 7) % 7);
+  const m = s.match(/(\d{1,2})[.\/-](\d{1,2})(?:[.\/-](\d{2,4}))?/);
+  if (m) {
+    let y = m[3] ? +m[3] : today.getFullYear(); if (y < 100) y += 2000;
+    return new Date(y, +m[2] - 1, +m[1]);
+  }
+  return null;
+}
+
+function renderMadplan(rows) {
+  if (rows) lastMadplan = rows;
+  const box = $("madList"); box.innerHTML = "";
+  if (!getCalUrl()) { box.appendChild(el("div", "empty", "Forbind kalenderen for at se madplanen.")); return; }
+  if (!lastMadplan) return;
+  const today = startOfDay(new Date());
+  const items = lastMadplan
+    .map(r => Object.assign({ d: madDate(r.dag, today) }, r))
+    .filter(r => r.d && r.d >= today && r.d < addDays(today, 7) && r.ret)
+    .sort((a, b) => a.d - b.d);
+  if (!items.length) {
+    box.appendChild(el("div", "empty", "Ingen madplan for de næste dage. Tryk på Rediger for at lave en."));
+    return;
+  }
+  items.forEach(r => {
+    const isToday = +r.d === +today;
+    const row = el("div", "mad" + (isToday ? " tonight" : ""));
+    row.appendChild(el("div", "md", isToday ? "I aften" : cap(DAYS[r.d.getDay()])));
+    const t = el("div", "mt");
+    t.appendChild(el("div", "mr", r.ret));
+    const meta = [r.kok && "Kok: " + r.kok, r.note].filter(Boolean).join(". ");
+    if (meta) t.appendChild(el("div", "mm", meta));
+    row.appendChild(t);
+    box.appendChild(row);
+  });
+}
+
+// ---------- Billedramme ----------
+let photoIds = [], photoOrder = [], photoPos = 0, frameOn = false, frameTimer = null, lastTouch = Date.now(), frontLayer = 0;
+
+function setPhotos(ids) {
+  photoIds = ids || [];
+  photoOrder = photoIds.slice().sort(() => Math.random() - 0.5);
+  photoPos = 0;
+}
+const toMin = s => { const [h, m] = s.split(":").map(Number); return h * 60 + m; };
+function inFrameWindow(d) {
+  const B = CONFIG.billedramme, m = d.getHours() * 60 + d.getMinutes();
+  const a = toMin(B.fra), b = toMin(B.til);
+  return a <= b ? (m >= a && m < b) : (m >= a || m < b); // vindue kan gå hen over midnat
+}
+
+async function fetchPhoto(id) {
+  const base = getCalUrl();
+  const r = await fetch(base + (base.indexOf("?") >= 0 ? "&" : "?") + "photo=" + encodeURIComponent(id));
+  const j = await r.json();
+  if (!j.data) throw new Error(j.error || "intet billede");
+  return j.data;
+}
+
+async function nextPhoto() {
+  if (!frameOn || !photoOrder.length) return;
+  const id = photoOrder[photoPos % photoOrder.length]; photoPos++;
+  try {
+    const src = await fetchPhoto(id);
+    if (!frameOn) return;
+    const layers = document.querySelectorAll("#frame .ph");
+    const back = layers[1 - frontLayer];
+    back.style.backgroundImage = "url('" + src + "')";
+    back.classList.add("show"); layers[frontLayer].classList.remove("show");
+    frontLayer = 1 - frontLayer;
+  } catch (e) { console.error(e); }
+  clearTimeout(frameTimer);
+  frameTimer = setTimeout(nextPhoto, CONFIG.billedramme.skiftSekunder * 1000);
+}
+
+function updateFrameInfo() {
+  if (!frameOn) return;
+  const d = new Date();
+  $("fClock").textContent = hhmm(d);
+  $("fDate").textContent = cap(DAYS[d.getDay()]) + " " + d.getDate() + ". " + MONTHS[d.getMonth()];
+  $("fCountdown").innerHTML = $("countdown").innerHTML;
+}
+
+function showFrame() {
+  if (frameOn) return;
+  frameOn = true; $("frame").classList.add("on");
+  updateFrameInfo(); nextPhoto();
+}
+function hideFrame() {
+  frameOn = false; clearTimeout(frameTimer);
+  $("frame").classList.remove("on");
+}
+function checkFrame() {
+  const B = CONFIG.billedramme, now = new Date();
+  const idle = (Date.now() - lastTouch) / 60000 >= B.efterMinutter;
+  if (photoIds.length && idle && inFrameWindow(now)) showFrame();
+  else if (frameOn && !inFrameWindow(now)) hideFrame();
+  updateFrameInfo();
+}
+["touchstart", "mousedown", "keydown"].forEach(ev => document.addEventListener(ev, () => { lastTouch = Date.now(); }, { passive: true }));
+
 // ---------- Opdatering ----------
 const loaders = {
   weather: () => run("weatherStatus", loadWeather),
@@ -839,6 +1148,7 @@ let hiddenAt = 0;
 document.addEventListener("visibilitychange", () => {
   if (document.hidden) hiddenAt = Date.now();
   else if (Date.now() - hiddenAt > 5 * 60 * 1000) refreshAll();
+  else loaders.calendar(); // fx efter redigering af madplanen
 });
 
 // Genindlæs siden lige efter midnat, så "i dag" altid passer
@@ -847,8 +1157,12 @@ document.addEventListener("visibilitychange", () => {
   setTimeout(() => location.reload(), next - n);
 })();
 
+applySeason();
 tick(); setInterval(tick, 10000);
 renderSFO();
+setInterval(checkFrame, 30000);
+$("frame").addEventListener("click", e => { e.stopPropagation(); lastTouch = Date.now(); hideFrame(); });
+$("madEdit").onclick = e => { e.stopPropagation(); window.open(CONFIG.madplanUrl, "_blank"); };
 refreshAll();
 setInterval(loaders.weather, CONFIG.refreshMinutes.weather * 60000);
 setInterval(loaders.prices, CONFIG.refreshMinutes.prices * 60000);
